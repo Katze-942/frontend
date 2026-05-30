@@ -188,7 +188,13 @@
             "unsaved-changes": "Unsaved Changes",
             "your-changes-will-be-lost-if-you-leave-this-page-without-saving": "Your changes will be lost if you leave this page without saving.",
             "leave": "Leave",
-            "stay": "Stay"
+            "stay": "Stay",
+            "local-draft-found": "Local draft found",
+            "restore-draft-description": "A locally saved draft was found for this editor. Restore it to continue from the browser copy, or discard it to keep the server version.",
+            "server-version-changed": "The server version changed after this draft was saved. Review the restored content before saving.",
+            "local-draft-warning": "This draft is stored only in this browser and was last updated at {{date}}.",
+            "restore-draft": "Restore draft",
+            "discard-draft": "Discard draft"
         }
     },
     "keypair": {

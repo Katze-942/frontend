@@ -43,8 +43,11 @@ export function ConfigEditorActionsFeature(props: Props) {
         setIsConfigValid,
         configProfile,
         hasUnsavedChanges,
+        saveDraftNow,
+        clearDraft,
         setHasUnsavedChanges,
-        setOriginalValue
+        setOriginalValue,
+        skipDraftSaveForValue
     } = props
     const { t } = useTranslation()
 
@@ -71,6 +74,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                 const newValue = JSON.stringify(updatedConfigProfile.config, null, 2)
 
                 if (editorRef.current) {
+                    skipDraftSaveForValue(newValue)
                     editorRef.current.setValue(newValue)
                     setOriginalValue(newValue)
                 }
@@ -83,6 +87,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                 )
 
                 setHasUnsavedChanges(false)
+                clearDraft()
             },
             onError: (error) => {
                 setIsConfigValid(false)
@@ -101,6 +106,7 @@ export function ConfigEditorActionsFeature(props: Props) {
         if (!editorRef.current) return
 
         const currentValue = editorRef.current.getValue()
+        saveDraftNow(currentValue)
 
         try {
             JSON.parse(currentValue)

@@ -1,12 +1,19 @@
 import type { editor } from 'monaco-editor'
 
-import { Box, Button, Card, Code, Group, Loader, Paper, Text } from '@mantine/core'
+import { Box, Button, Card, Code, Group, Loader, Paper, Stack, Text } from '@mantine/core'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Editor, { Monaco, useMonaco } from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
 import { useBlocker } from 'react-router-dom'
 import { modals } from '@mantine/modals'
 
+import {
+    createBrowserDraftHash,
+    getConfigProfileDraftKey,
+    readBrowserDraft,
+    removeBrowserDraft,
+    writeBrowserDraft
+} from '@shared/utils/browser-draft-storage'
 import { ConfigEditorActionsFeature } from '@features/dashboard/config-profiles/config-editor-actions'
 import { ConfigValidationFeature } from '@features/dashboard/config-profiles/config-validation'
 import { MonacoSetupFeature } from '@features/dashboard/config-profiles/monaco-setup'
@@ -21,15 +28,18 @@ export function ConfigEditorWidget(props: IProps) {
     const monaco = useMonaco()
 
     const { configProfile, isWasmCrashed, isWasmRestarting, onRestartWasm, snippets } = props
+    const serverValue = JSON.stringify(configProfile.config, null, 2) || ''
+    const draftKey = getConfigProfileDraftKey(configProfile.uuid)
 
     const [result, setResult] = useState('')
     const [isConfigValid, setIsConfigValid] = useState(true)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-    const [originalValue, setOriginalValue] = useState<string>(
-        JSON.stringify(configProfile.config, null, 2) || ''
-    )
+    const [originalValue, setOriginalValue] = useState<string>(serverValue)
 
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+    const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const isDraftCheckedRef = useRef(false)
+    const skippedDraftValueRef = useRef<null | string>(null)
     const wasWasmRestarting = useRef(false)
 
     useEffect(() => {
@@ -66,6 +76,108 @@ export function ConfigEditorWidget(props: IProps) {
         const hasChanges = currentValue !== originalValue
         setHasUnsavedChanges(hasChanges)
     }
+
+    const clearDraftAutosaveTimeout = () => {
+        if (!draftAutosaveTimeoutRef.current) return
+
+        clearTimeout(draftAutosaveTimeoutRef.current)
+        draftAutosaveTimeoutRef.current = null
+    }
+
+    const saveDraftNow = (value: string) => {
+        clearDraftAutosaveTimeout()
+
+        writeBrowserDraft(draftKey, {
+            baseHash: createBrowserDraftHash(originalValue),
+            updatedAt: Date.now(),
+            value
+        })
+    }
+
+    const scheduleDraftSave = (value: string) => {
+        clearDraftAutosaveTimeout()
+
+        draftAutosaveTimeoutRef.current = setTimeout(() => {
+            saveDraftNow(value)
+        }, 1000)
+    }
+
+    const clearDraft = () => {
+        clearDraftAutosaveTimeout()
+        removeBrowserDraft(draftKey)
+    }
+
+    const skipDraftSaveForValue = (value: string) => {
+        skippedDraftValueRef.current = value
+    }
+
+    const validateConfig = () => {
+        if (isWasmCrashed || isWasmRestarting) return
+
+        ConfigValidationFeature.validate(editorRef, setResult, setIsConfigValid, snippetMap)
+    }
+
+    const restoreDraftIfNeeded = () => {
+        if (isDraftCheckedRef.current || !editorRef.current) return
+        isDraftCheckedRef.current = true
+
+        const draft = readBrowserDraft(draftKey)
+        if (!draft) return
+
+        if (draft.value === serverValue) {
+            removeBrowserDraft(draftKey)
+            return
+        }
+
+        const isServerChanged = draft.baseHash !== createBrowserDraftHash(serverValue)
+
+        modals.openConfirmModal({
+            title: t('config-editor.widget.local-draft-found'),
+            children: (
+                <Stack gap="xs">
+                    <Text c="dimmed" size="sm">
+                        {t('config-editor.widget.restore-draft-description')}
+                    </Text>
+                    {isServerChanged && (
+                        <Text c="orange" size="sm">
+                            {t('config-editor.widget.server-version-changed')}
+                        </Text>
+                    )}
+                    <Text c="dimmed" size="xs">
+                        {t('config-editor.widget.local-draft-warning', {
+                            date: new Date(draft.updatedAt).toLocaleString()
+                        })}
+                    </Text>
+                </Stack>
+            ),
+            centered: true,
+            closeOnClickOutside: false,
+            closeOnEscape: false,
+            labels: {
+                confirm: t('config-editor.widget.restore-draft'),
+                cancel: t('config-editor.widget.discard-draft')
+            },
+            confirmProps: {
+                color: 'teal'
+            },
+            cancelProps: {
+                color: 'red',
+                variant: 'light'
+            },
+            onConfirm: () => {
+                editorRef.current?.setValue(draft.value)
+                setHasUnsavedChanges(true)
+                validateConfig()
+            },
+            onCancel: clearDraft
+        })
+    }
+
+    useEffect(() => {
+        return () => {
+            clearDraftAutosaveTimeout()
+        }
+    }, [])
 
     useLayoutEffect(() => {
         document.body.addEventListener('wheel', preventBackScroll, {
@@ -196,26 +308,24 @@ export function ConfigEditorWidget(props: IProps) {
                     className={styles.monacoEditor}
                     defaultLanguage="json"
                     loading={t('config-editor.widget.loading-editor')}
-                    onChange={() => {
-                        if (!isWasmCrashed && !isWasmRestarting) {
-                            ConfigValidationFeature.validate(
-                                editorRef,
-                                setResult,
-                                setIsConfigValid,
-                                snippetMap
-                            )
+                    onChange={(value) => {
+                        const currentValue = value ?? editorRef.current?.getValue() ?? ''
+
+                        if (skippedDraftValueRef.current === currentValue) {
+                            skippedDraftValueRef.current = null
+                        } else {
+                            skippedDraftValueRef.current = null
+                            scheduleDraftSave(currentValue)
                         }
+
+                        validateConfig()
                         checkForChanges()
                     }}
                     onMount={(editor) => {
                         editorRef.current = editor
 
-                        ConfigValidationFeature.validate(
-                            editorRef,
-                            setResult,
-                            setIsConfigValid,
-                            snippetMap
-                        )
+                        validateConfig()
+                        restoreDraftIfNeeded()
                     }}
                     options={{
                         autoClosingBrackets: 'always',
@@ -259,21 +369,24 @@ export function ConfigEditorWidget(props: IProps) {
                         }
                     }}
                     theme="GithubDark"
-                    value={JSON.stringify(configProfile.config, null, 2)}
+                    value={serverValue}
                 />
             </Paper>
 
             <Card className={styles.footer} h="auto" m="0" mt="md" pos="sticky">
                 <ConfigEditorActionsFeature
+                    clearDraft={clearDraft}
                     configProfile={configProfile}
                     editorRef={editorRef}
                     hasUnsavedChanges={hasUnsavedChanges}
                     isConfigValid={isConfigValid}
                     originalValue={originalValue}
+                    saveDraftNow={saveDraftNow}
                     setHasUnsavedChanges={setHasUnsavedChanges}
                     setIsConfigValid={setIsConfigValid}
                     setOriginalValue={setOriginalValue}
                     setResult={setResult}
+                    skipDraftSaveForValue={skipDraftSaveForValue}
                 />
             </Card>
         </Box>

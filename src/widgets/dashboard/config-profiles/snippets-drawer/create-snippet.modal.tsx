@@ -4,11 +4,18 @@ import { Button, Code, Group, Paper, Stack, TextInput } from '@mantine/core'
 import { CreateSnippetCommand } from '@remnawave/backend-contract'
 import { Editor, Monaco, useMonaco } from '@monaco-editor/react'
 import { zodResolver } from 'mantine-form-zod-resolver'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useEffect, useRef } from 'react'
 import { modals } from '@mantine/modals'
 import { useForm } from '@mantine/form'
 
+import {
+    createBrowserDraftHash,
+    getCreateSnippetDraftKey,
+    readBrowserDraft,
+    removeBrowserDraft,
+    writeBrowserDraft
+} from '@shared/utils/browser-draft-storage'
 import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
 import { useCreateSnippet } from '@shared/api/hooks/snippets/snippets.mutation.hooks'
 import { monacoTheme } from '@shared/constants/monaco-theme'
@@ -24,6 +31,11 @@ export const CreateSnippetModal = () => {
 
     const monaco = useMonaco()
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+    const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const isDraftCheckedRef = useRef(false)
+    const draftKey = getCreateSnippetDraftKey()
+    const emptySnippetValue = JSON.stringify([], null, 2)
+    const [snippetName, setSnippetName] = useState('')
 
     const createSnippetForm = useForm<CreateSnippetCommand.Request>({
         name: 'create-snippet-form',
@@ -42,20 +54,126 @@ export const CreateSnippetModal = () => {
         MonacoSetupSnippetsFeature.setup(monaco, i18n.language)
     }, [i18n.language, monaco])
 
+    const clearDraftAutosaveTimeout = () => {
+        if (!draftAutosaveTimeoutRef.current) return
+
+        clearTimeout(draftAutosaveTimeoutRef.current)
+        draftAutosaveTimeoutRef.current = null
+    }
+
+    const saveDraftNow = (name: string, value: string) => {
+        clearDraftAutosaveTimeout()
+
+        writeBrowserDraft<{ name: string }>(draftKey, {
+            baseHash: createBrowserDraftHash(emptySnippetValue),
+            meta: { name },
+            updatedAt: Date.now(),
+            value
+        })
+    }
+
+    const scheduleDraftSave = (name: string, value: string) => {
+        clearDraftAutosaveTimeout()
+
+        draftAutosaveTimeoutRef.current = setTimeout(() => {
+            saveDraftNow(name, value)
+        }, 1000)
+    }
+
+    const clearDraft = () => {
+        clearDraftAutosaveTimeout()
+        removeBrowserDraft(draftKey)
+    }
+
     const { mutate: createSnippet, isPending: isCreating } = useCreateSnippet({
         mutationFns: {
             onSuccess: () => {
                 queryClient.refetchQueries({ queryKey: QueryKeys.snippets.getSnippets.queryKey })
 
+                clearDraft()
                 modals.close(CREATE_SNIPPET_MODAL_ID)
             }
         }
     })
 
+    const validateSnippetValue = (value: string) => {
+        try {
+            JSON.parse(value || '[]')
+
+            createSnippetForm.clearErrors()
+        } catch {
+            createSnippetForm.setFieldError('snippet', t('snippets.drawer.widget.invalid-json'))
+        }
+    }
+
+    const restoreDraftIfNeeded = () => {
+        if (isDraftCheckedRef.current || !editorRef.current) return
+        isDraftCheckedRef.current = true
+
+        const draft = readBrowserDraft<{ name: string }>(draftKey)
+        if (!draft) return
+
+        const draftName = draft.meta?.name ?? ''
+
+        if (!draftName && draft.value === emptySnippetValue) {
+            removeBrowserDraft(draftKey)
+            return
+        }
+
+        modals.openConfirmModal({
+            title: t('config-editor.widget.local-draft-found'),
+            children: (
+                <Stack gap="xs">
+                    <TextInput
+                        disabled
+                        label={t('snippets.drawer.widget.snippet-name')}
+                        value={draftName}
+                    />
+                    <Code block>{draft.value}</Code>
+                    <Code color="yellow">
+                        {t('config-editor.widget.local-draft-warning', {
+                            date: new Date(draft.updatedAt).toLocaleString()
+                        })}
+                    </Code>
+                </Stack>
+            ),
+            centered: true,
+            closeOnClickOutside: false,
+            closeOnEscape: false,
+            labels: {
+                confirm: t('config-editor.widget.restore-draft'),
+                cancel: t('config-editor.widget.discard-draft')
+            },
+            confirmProps: {
+                color: 'teal'
+            },
+            cancelProps: {
+                color: 'red',
+                variant: 'light'
+            },
+            onConfirm: () => {
+                setSnippetName(draftName)
+                createSnippetForm.setFieldValue('name', draftName)
+                editorRef.current?.setValue(draft.value)
+                validateSnippetValue(draft.value)
+            },
+            onCancel: clearDraft
+        })
+    }
+
+    useEffect(() => {
+        return () => {
+            clearDraftAutosaveTimeout()
+        }
+    }, [])
+
     const handleCreate = (values: CreateSnippetCommand.Request) => {
         if (!editorRef.current) return
 
-        let currentValue = editorRef.current.getValue()
+        const currentTextValue = editorRef.current.getValue()
+        let currentValue = currentTextValue
+
+        saveDraftNow(values.name, currentTextValue)
 
         try {
             currentValue = JSON.parse(currentValue)
@@ -99,13 +217,23 @@ export const CreateSnippetModal = () => {
         <form onSubmit={(e) => createSnippetForm.onSubmit(handleCreate)(e)}>
             <Stack gap="md">
                 <TextInput
-                    key={createSnippetForm.key('name')}
+                    error={createSnippetForm.getInputProps('name').error}
                     label={t('snippets.drawer.widget.snippet-name')}
+                    onChange={(event) => {
+                        const nextName = event.currentTarget.value
+
+                        setSnippetName(nextName)
+                        createSnippetForm.setFieldValue('name', nextName)
+                        scheduleDraftSave(
+                            nextName,
+                            editorRef.current?.getValue() ?? emptySnippetValue
+                        )
+                    }}
                     placeholder={t(
                         'snippets.drawer.widget.enter-snippet-name-cannot-be-changed-later'
                     )}
                     required
-                    {...createSnippetForm.getInputProps('name')}
+                    value={snippetName}
                 />
 
                 <Paper
@@ -124,19 +252,14 @@ export const CreateSnippetModal = () => {
                         height={400}
                         loading={t('config-editor.widget.loading-editor')}
                         onChange={(value) => {
-                            try {
-                                JSON.parse(value || '[]')
+                            const nextValue = value ?? ''
 
-                                createSnippetForm.clearErrors()
-                            } catch {
-                                createSnippetForm.setFieldError(
-                                    'snippet',
-                                    t('snippets.drawer.widget.invalid-json')
-                                )
-                            }
+                            scheduleDraftSave(snippetName, nextValue)
+                            validateSnippetValue(nextValue)
                         }}
                         onMount={(editor) => {
                             editorRef.current = editor
+                            restoreDraftIfNeeded()
                         }}
                         options={{
                             autoClosingBrackets: 'always',
@@ -214,6 +337,8 @@ export const CreateSnippetModal = () => {
                         disabled={isCreating}
                         onClick={() => {
                             createSnippetForm.reset()
+                            setSnippetName('')
+                            clearDraft()
                             modals.close(CREATE_SNIPPET_MODAL_ID)
                         }}
                         variant="subtle"

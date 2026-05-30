@@ -188,7 +188,13 @@
             "unsaved-changes": "修改未保存",
             "your-changes-will-be-lost-if-you-leave-this-page-without-saving": "如果您离开此页面而不保存，您的更改将会丢失。",
             "leave": "离开",
-            "stay": "留在当前页面"
+            "stay": "留在当前页面",
+            "local-draft-found": "发现本地草稿",
+            "restore-draft-description": "此编辑器有一个保存在本浏览器中的草稿。恢复它以继续使用浏览器副本，或丢弃它以保留服务器版本。",
+            "server-version-changed": "保存此草稿后，服务器版本已发生变化。保存前请检查恢复的内容。",
+            "local-draft-warning": "此草稿仅保存在当前浏览器中，最后更新时间：{{date}}。",
+            "restore-draft": "恢复草稿",
+            "discard-draft": "丢弃草稿"
         }
     },
     "keypair": {

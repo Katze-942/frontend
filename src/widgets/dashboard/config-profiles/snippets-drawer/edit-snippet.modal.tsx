@@ -8,8 +8,14 @@ import { useTranslation } from 'react-i18next'
 import { useEffect, useRef } from 'react'
 import { modals } from '@mantine/modals'
 import { useForm } from '@mantine/form'
-import { t } from 'i18next'
 
+import {
+    createBrowserDraftHash,
+    getEditSnippetDraftKey,
+    readBrowserDraft,
+    removeBrowserDraft,
+    writeBrowserDraft
+} from '@shared/utils/browser-draft-storage'
 import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
 import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
 import { monacoTheme } from '@shared/constants/monaco-theme'
@@ -28,19 +34,14 @@ interface IProps {
 export const EditSnippetModal = (props: IProps) => {
     const { snippet } = props
 
-    const { i18n } = useTranslation()
+    const { t, i18n } = useTranslation()
 
     const monaco = useMonaco()
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-
-    const { mutate: updateSnippet, isPending: isUpdating } = useUpdateSnippet({
-        mutationFns: {
-            onSuccess: () => {
-                queryClient.refetchQueries({ queryKey: QueryKeys.snippets.getSnippets.queryKey })
-                modals.close(EDIT_SNIPPET_MODAL_ID)
-            }
-        }
-    })
+    const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const isDraftCheckedRef = useRef(false)
+    const draftKey = getEditSnippetDraftKey(snippet.name)
+    const originalSnippetValue = JSON.stringify(snippet.snippet || [], null, 2)
 
     const editSnippetForm = useForm<UpdateSnippetCommand.Request>({
         name: 'edit-snippet-form',
@@ -53,6 +54,115 @@ export const EditSnippetModal = (props: IProps) => {
         }
     })
 
+    const clearDraftAutosaveTimeout = () => {
+        if (!draftAutosaveTimeoutRef.current) return
+
+        clearTimeout(draftAutosaveTimeoutRef.current)
+        draftAutosaveTimeoutRef.current = null
+    }
+
+    const saveDraftNow = (value: string) => {
+        clearDraftAutosaveTimeout()
+
+        writeBrowserDraft(draftKey, {
+            baseHash: createBrowserDraftHash(originalSnippetValue),
+            updatedAt: Date.now(),
+            value
+        })
+    }
+
+    const scheduleDraftSave = (value: string) => {
+        clearDraftAutosaveTimeout()
+
+        draftAutosaveTimeoutRef.current = setTimeout(() => {
+            saveDraftNow(value)
+        }, 1000)
+    }
+
+    const clearDraft = () => {
+        clearDraftAutosaveTimeout()
+        removeBrowserDraft(draftKey)
+    }
+
+    const { mutate: updateSnippet, isPending: isUpdating } = useUpdateSnippet({
+        mutationFns: {
+            onSuccess: () => {
+                queryClient.refetchQueries({ queryKey: QueryKeys.snippets.getSnippets.queryKey })
+                clearDraft()
+                modals.close(EDIT_SNIPPET_MODAL_ID)
+            }
+        }
+    })
+
+    const validateSnippetValue = (value: string) => {
+        try {
+            JSON.parse(value || '[]')
+
+            editSnippetForm.clearErrors()
+        } catch {
+            editSnippetForm.setFieldError('snippet', t('snippets.drawer.widget.invalid-json'))
+        }
+    }
+
+    const restoreDraftIfNeeded = () => {
+        if (isDraftCheckedRef.current || !editorRef.current) return
+        isDraftCheckedRef.current = true
+
+        const draft = readBrowserDraft(draftKey)
+        if (!draft) return
+
+        if (draft.value === originalSnippetValue) {
+            removeBrowserDraft(draftKey)
+            return
+        }
+
+        const isServerChanged = draft.baseHash !== createBrowserDraftHash(originalSnippetValue)
+
+        modals.openConfirmModal({
+            title: t('config-editor.widget.local-draft-found'),
+            children: (
+                <Stack gap="xs">
+                    <Code block>{draft.value}</Code>
+                    {isServerChanged && (
+                        <Code color="yellow">
+                            {t('config-editor.widget.server-version-changed')}
+                        </Code>
+                    )}
+                    <Code color="yellow">
+                        {t('config-editor.widget.local-draft-warning', {
+                            date: new Date(draft.updatedAt).toLocaleString()
+                        })}
+                    </Code>
+                </Stack>
+            ),
+            centered: true,
+            closeOnClickOutside: false,
+            closeOnEscape: false,
+            labels: {
+                confirm: t('config-editor.widget.restore-draft'),
+                cancel: t('config-editor.widget.discard-draft')
+            },
+            confirmProps: {
+                color: 'teal'
+            },
+            cancelProps: {
+                color: 'red',
+                variant: 'light'
+            },
+            onConfirm: () => {
+                editorRef.current?.setValue(draft.value)
+                validateSnippetValue(draft.value)
+            },
+            onCancel: clearDraft
+        })
+    }
+
+    useEffect(() => {
+        return () => {
+            clearDraftAutosaveTimeout()
+        }
+    }, [])
+
     const handleEditorDidMount = (monaco: Monaco) => {
         monaco.editor.defineTheme('GithubDark', {
             ...monacoTheme,
@@ -63,7 +173,10 @@ export const EditSnippetModal = (props: IProps) => {
     const handleUpdate = (values: UpdateSnippetCommand.Request) => {
         if (!editorRef.current) return
 
-        let currentValue = editorRef.current.getValue()
+        const currentTextValue = editorRef.current.getValue()
+        let currentValue = currentTextValue
+
+        saveDraftNow(currentTextValue)
 
         try {
             currentValue = JSON.parse(currentValue)
@@ -126,19 +239,14 @@ export const EditSnippetModal = (props: IProps) => {
                         height={400}
                         loading={t('config-editor.widget.loading-editor')}
                         onChange={(value) => {
-                            try {
-                                JSON.parse(value || '[]')
+                            const nextValue = value ?? ''
 
-                                editSnippetForm.clearErrors()
-                            } catch {
-                                editSnippetForm.setFieldError(
-                                    'snippet',
-                                    t('snippets.drawer.widget.invalid-json')
-                                )
-                            }
+                            scheduleDraftSave(nextValue)
+                            validateSnippetValue(nextValue)
                         }}
                         onMount={(editor) => {
                             editorRef.current = editor
+                            restoreDraftIfNeeded()
                         }}
                         options={{
                             autoClosingBrackets: 'always',
@@ -215,6 +323,7 @@ export const EditSnippetModal = (props: IProps) => {
                         disabled={isUpdating}
                         onClick={() => {
                             editSnippetForm.reset()
+                            clearDraft()
                             modals.close(EDIT_SNIPPET_MODAL_ID)
                         }}
                         variant="subtle"
