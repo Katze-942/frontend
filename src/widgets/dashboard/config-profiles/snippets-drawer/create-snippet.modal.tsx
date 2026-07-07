@@ -1,14 +1,18 @@
 import type { editor } from 'monaco-editor'
 
+import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
 import { Button, Code, Group, Paper, Stack, TextInput } from '@mantine/core'
-import { CreateSnippetCommand } from '@remnawave/backend-contract'
+import { useForm, schemaResolver } from '@mantine/form'
+import { modals } from '@mantine/modals'
 import { Editor, Monaco, useMonaco } from '@monaco-editor/react'
-import { zodResolver } from 'mantine-form-zod-resolver'
+import { CreateSnippetCommand } from '@remnawave/backend-contract'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { modals } from '@mantine/modals'
-import { useForm } from '@mantine/form'
 
+import { queryClient } from '@shared/api'
+import { QueryKeys } from '@shared/api/hooks/keys-factory'
+import { useCreateSnippet } from '@shared/api/hooks/snippets/snippets.mutation.hooks'
+import { monacoTheme } from '@shared/constants/monaco-theme'
 import {
     createBrowserDraftHash,
     getCreateSnippetDraftKey,
@@ -16,11 +20,6 @@ import {
     removeBrowserDraft,
     writeBrowserDraft
 } from '@shared/utils/browser-draft-storage'
-import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
-import { useCreateSnippet } from '@shared/api/hooks/snippets/snippets.mutation.hooks'
-import { monacoTheme } from '@shared/constants/monaco-theme'
-import { QueryKeys } from '@shared/api/hooks/keys-factory'
-import { queryClient } from '@shared/api'
 
 import classes from './SnippetsDrawer.module.css'
 
@@ -37,11 +36,11 @@ export const CreateSnippetModal = () => {
     const emptySnippetValue = JSON.stringify([], null, 2)
     const [snippetName, setSnippetName] = useState('')
 
-    const createSnippetForm = useForm<CreateSnippetCommand.Request>({
+    const createSnippetForm = useForm<CreateSnippetCommand.RequestBody>({
         name: 'create-snippet-form',
         mode: 'uncontrolled',
         validateInputOnBlur: true,
-        validate: zodResolver(CreateSnippetCommand.RequestSchema),
+        validate: schemaResolver(CreateSnippetCommand.RequestBodySchema),
         initialValues: {
             name: '',
             snippet: []
@@ -167,7 +166,7 @@ export const CreateSnippetModal = () => {
         }
     }, [])
 
-    const handleCreate = (values: CreateSnippetCommand.Request) => {
+    const handleCreate = (values: CreateSnippetCommand.RequestBody) => {
         if (!editorRef.current) return
 
         const currentTextValue = editorRef.current.getValue()
@@ -217,8 +216,13 @@ export const CreateSnippetModal = () => {
         <form onSubmit={(e) => createSnippetForm.onSubmit(handleCreate)(e)}>
             <Stack gap="md">
                 <TextInput
-                    error={createSnippetForm.getInputProps('name').error}
+                    key={createSnippetForm.key('name')}
                     label={t('snippets.drawer.widget.snippet-name')}
+                    placeholder={t(
+                        'snippets.drawer.widget.enter-snippet-name-cannot-be-changed-later'
+                    )}
+                    required
+                    {...createSnippetForm.getInputProps('name')}
                     onChange={(event) => {
                         const nextName = event.currentTarget.value
 
@@ -229,11 +233,6 @@ export const CreateSnippetModal = () => {
                             editorRef.current?.getValue() ?? emptySnippetValue
                         )
                     }}
-                    placeholder={t(
-                        'snippets.drawer.widget.enter-snippet-name-cannot-be-changed-later'
-                    )}
-                    required
-                    value={snippetName}
                 />
 
                 <Paper

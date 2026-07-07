@@ -1,28 +1,28 @@
+import { DeleteNodeFeature } from '@features/ui/dashboard/nodes/delete-node'
+import { ResetNodeTrafficFeature } from '@features/ui/dashboard/nodes/reset-node-traffic'
+import { RestartNodeButtonFeature } from '@features/ui/dashboard/nodes/restart-node-button'
+import { ToggleNodeStatusButtonFeature } from '@features/ui/dashboard/nodes/toggle-node-status-button'
+import { Button, CopyButton, Group, Menu, px, Stack } from '@mantine/core'
+import { UseFormReturnType } from '@mantine/form'
 import {
     GetNodePluginsCommand,
-    GetOneNodeCommand,
-    GetPubKeyCommand,
+    GetNodeSecretKeyCommand,
+    GetNodeCommand,
     UpdateNodeCommand
 } from '@remnawave/backend-contract'
-import { Button, CopyButton, Group, Menu, px, Stack } from '@mantine/core'
-import { PiFloppyDiskDuotone } from 'react-icons/pi'
-import { UseFormReturnType } from '@mantine/form'
-import { TbCopy, TbDots } from 'react-icons/tb'
-import { motion } from 'framer-motion'
-import { ReactNode } from 'react'
-import { t } from 'i18next'
-
-import { ToggleNodeStatusButtonFeature } from '@features/ui/dashboard/nodes/toggle-node-status-button'
-import { RestartNodeButtonFeature } from '@features/ui/dashboard/nodes/restart-node-button'
-import { ResetNodeTrafficFeature } from '@features/ui/dashboard/nodes/reset-node-traffic'
 import { ModalAccordionWidget } from '@widgets/dashboard/nodes/modal-accordeon-widget'
-import { DeleteNodeFeature } from '@features/ui/dashboard/nodes/delete-node'
-import { ModalFooter } from '@shared/ui/modal-footer'
-import { useIsMobile } from '@shared/hooks'
+import { motion } from 'framer-motion'
+import { t } from 'i18next'
+import { ReactNode } from 'react'
+import { PiFloppyDiskDuotone } from 'react-icons/pi'
+import { TbCopy, TbDots } from 'react-icons/tb'
 
-import { NodeTrackingAndBillingCard } from './node-tracking-and-billing.card'
+import { useIsMobile } from '@shared/hooks'
+import { ModalFooter } from '@shared/ui/modal-footer'
+
 import { NodeConfigProfilesCard } from './node-config-profiles.card'
 import { NodeConsumptionCard } from './node-consumption.card'
+import { NodeTrackingAndBillingCard } from './node-tracking-and-billing.card'
 import { NodeVitalsCard } from './node-vitals.card'
 
 const MotionWrapper = motion.div
@@ -46,24 +46,24 @@ const cardVariants = {
     }
 }
 
-interface IProps<T extends UpdateNodeCommand.Request> {
+interface IProps<T extends UpdateNodeCommand.RequestBody> {
     form: UseFormReturnType<T>
     handleClose: () => void
     handleSubmit: () => void
     isDataSubmitting: boolean
-    node: GetOneNodeCommand.Response['response']
+    node: GetNodeCommand.Response['response']
     nodeDetailsCard?: ReactNode
     nodePlugins: GetNodePluginsCommand.Response['response']['nodePlugins']
     nodeSystemCard?: ReactNode
-    pubKey: GetPubKeyCommand.Response['response'] | undefined
+    secretKey: GetNodeSecretKeyCommand.Response['response'] | undefined
 }
 
-export const BaseNodeForm = <T extends UpdateNodeCommand.Request>(props: IProps<T>) => {
+export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IProps<T>) => {
     const {
         form,
         node,
         nodePlugins,
-        pubKey,
+        secretKey,
         nodeDetailsCard,
         nodeSystemCard,
         handleClose,
@@ -98,7 +98,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.Request>(props: IProps<
                         motionWrapper={MotionWrapper}
                         nodePlugins={nodePlugins}
                         nodeUuid={node.uuid}
-                        pubKey={pubKey}
+                        secretKey={secretKey}
                     />
 
                     <NodeConfigProfilesCard
@@ -141,7 +141,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.Request>(props: IProps<
                             motionWrapper={MotionWrapper}
                             nodePlugins={nodePlugins}
                             nodeUuid={node.uuid}
-                            pubKey={pubKey}
+                            secretKey={secretKey}
                         />
 
                         <NodeConsumptionCard

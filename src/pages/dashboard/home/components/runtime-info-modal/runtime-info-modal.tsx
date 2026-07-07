@@ -1,3 +1,5 @@
+import { Code, SimpleGrid, Stack, Text } from '@mantine/core'
+import { Trans, useTranslation } from 'react-i18next'
 import {
     TbBolt,
     TbBraces,
@@ -12,13 +14,11 @@ import {
     TbStack3,
     TbStopwatch
 } from 'react-icons/tb'
-import { Code, SimpleGrid, Stack, Text } from '@mantine/core'
-import { Trans, useTranslation } from 'react-i18next'
 
+import { MetricEntry } from './metric-entry'
+import { ProcessCard } from './process-card'
 import classes from './runtime-info-modal.module.css'
 import { SectionShell } from './section-shell'
-import { ProcessCard } from './process-card'
-import { MetricEntry } from './metric-entry'
 
 const TRANS_COMPONENTS = { highlight: <Code className={classes.highlight} /> }
 

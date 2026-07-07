@@ -1,18 +1,17 @@
-import { UpdateSubscriptionSettingsCommand } from '@remnawave/backend-contract'
-import { TbListLetters, TbPrescription } from 'react-icons/tb'
-import { useTranslation } from 'react-i18next'
-import Masonry from 'react-layout-masonry'
 import { px, Tabs } from '@mantine/core'
-import { PiInfo } from 'react-icons/pi'
+import { UpdateSubscriptionSettingsCommand } from '@remnawave/backend-contract'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { PiInfo } from 'react-icons/pi'
+import { TbListLetters, TbPrescription } from 'react-icons/tb'
+import Masonry from 'react-layout-masonry'
 
-import { SubscriptionAnnounceRoutingCardWidget } from './cards/subscription-announce-routing-card.widget'
-import { SubscriptionResponseHeadersCardWidget } from './cards/subscription-response-headers-card.widget'
 import { SubscriptionAdditionalOptionsWidget } from './cards/subscription-additional-options.widget'
-import { SubscriptionUserRemarksCardWidget } from './cards/subscription-user-remarks-card.widget'
+import { SubscriptionAnnounceRoutingCardWidget } from './cards/subscription-announce-routing-card.widget'
 import { SubscriptionHwidSettingsWidget } from './cards/subscription-hwid-settings.widget'
 import { SubscriptionInfoCardWidget } from './cards/subscription-info-card.widget'
-import styles from './subscription-tabs.module.css'
+import { SubscriptionResponseHeadersCardWidget } from './cards/subscription-response-headers-card.widget'
+import { SubscriptionUserRemarksCardWidget } from './cards/subscription-user-remarks-card.widget'
 
 interface SubscriptionTabsProps {
     subscriptionSettings: UpdateSubscriptionSettingsCommand.Response['response']
@@ -33,10 +32,6 @@ export const SubscriptionSettingsTabsWidget = ({ subscriptionSettings }: Subscri
 
     return (
         <Tabs
-            classNames={{
-                tab: styles.tab,
-                tabLabel: styles.tabLabel
-            }}
             color="cyan"
             defaultValue={TABS.general}
             keepMountedMode="display-none"
@@ -45,11 +40,7 @@ export const SubscriptionSettingsTabsWidget = ({ subscriptionSettings }: Subscri
                     setActiveTab(value as TabKey)
                 }
             }}
-            style={{
-                width: '100%'
-            }}
             value={activeTab}
-            variant="unstyled"
         >
             <Tabs.List>
                 <Tabs.Tab leftSection={<PiInfo size={px('1.2rem')} />} value={TABS.general}>

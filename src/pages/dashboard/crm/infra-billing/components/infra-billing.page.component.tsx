@@ -1,43 +1,18 @@
-import { Split } from '@gfazioli/mantine-split-pane'
-import { useTranslation } from 'react-i18next'
-import { useLayoutEffect } from 'react'
 import { Stack } from '@mantine/core'
-import { motion } from 'motion/react'
-
-import { CreateInfraBillingRecordDrawerWidget } from '@widgets/dashboard/infra-billing/create-infra-billing-record-modal/create-infra-billing-record.modal.widget'
-import { CreateInfraBillingNodeModalWidget } from '@widgets/dashboard/infra-billing/create-infra-billing-node-modal/create-infra-billing-node.modal.widget'
-import { CreateInfraProviderDrawerWidget } from '@widgets/dashboard/infra-billing/create-infra-provider-drawer/create-infra-provider.drawer.widget'
-import { InfraBillingRecordsTableWidget } from '@widgets/dashboard/infra-billing/infra-billing-records-table/infra-billing-records-table.widget'
-import { ViewInfraProviderDrawerWidget } from '@widgets/dashboard/infra-billing/view-infra-provider-drawer/view-infra-provider.drawer.widget'
-import { NodesUsersUsageStatisticsDrawer } from '@widgets/dashboard/nodes/nodes-users-usage-statistics/nodes-users-usage-statistics.drawer'
-import { InfraBillingNodesTableWidget } from '@widgets/dashboard/infra-billing/infra-billing-nodes-table/infra-billing-nodes.widget'
-import { InfraProvidersTableWidget } from '@widgets/dashboard/infra-billing/infra-providers-table/infra-providers-table.widget'
-import { EditNodeByUuidModalWidget } from '@widgets/dashboard/nodes/edit-node-by-uuid-modal/edit-node-by-uuid-modal.widget'
-import { NodeUsersUsageDrawer } from '@widgets/dashboard/nodes/node-users-usage-statistic/node-users-usage-drawer.widget'
-import { LinkedHostsDrawer } from '@widgets/dashboard/nodes/linked-hosts-drawer/linked-hosts-drawer.widget'
-import { UpdateBillingDateModalWidget } from '@widgets/dashboard/infra-billing/update-billing-date-modal'
-import { StatsWidget } from '@widgets/dashboard/infra-billing/stats-widget/stats.widget'
+import { DesktopColumnsInfraBillingWidget } from '@widgets/dashboard/infra-billing/desktop-columns'
 import { MobileInfraBillingWidget } from '@widgets/dashboard/infra-billing/mobile'
-import { preventBackScrollTables } from '@shared/utils/misc'
-import { useIsMobile } from '@shared/hooks'
+import { StatsWidget } from '@widgets/dashboard/infra-billing/stats-widget/stats.widget'
+import { motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
+
+import { useIsMobile, usePreventTableBackScroll } from '@shared/hooks'
 import { Page } from '@shared/ui/page'
 
 export const InfraBillingPageComponent = () => {
     const { t } = useTranslation()
     const isMobile = useIsMobile()
 
-    useLayoutEffect(() => {
-        if (isMobile) {
-            return undefined
-        }
-
-        document.body.addEventListener('wheel', preventBackScrollTables, {
-            passive: false
-        })
-        return () => {
-            document.body.removeEventListener('wheel', preventBackScrollTables)
-        }
-    }, [isMobile])
+    usePreventTableBackScroll()
 
     return (
         <Page title={t('constants.infra-billing')}>
@@ -49,38 +24,13 @@ export const InfraBillingPageComponent = () => {
                 {isMobile ? (
                     <MobileInfraBillingWidget />
                 ) : (
-                    <>
+                    <Stack>
                         <StatsWidget />
 
-                        <Stack>
-                            <Split spacing="sm" variant="dotted">
-                                <Split.Pane initialWidth="60%">
-                                    <InfraBillingNodesTableWidget />
-                                </Split.Pane>
-
-                                <Split.Resizer />
-
-                                <Split.Pane grow initialWidth="40%">
-                                    <InfraBillingRecordsTableWidget />
-                                </Split.Pane>
-                            </Split>
-
-                            <InfraProvidersTableWidget />
-                        </Stack>
-                    </>
+                        <DesktopColumnsInfraBillingWidget />
+                    </Stack>
                 )}
             </motion.div>
-
-            <ViewInfraProviderDrawerWidget />
-            <CreateInfraProviderDrawerWidget />
-            <CreateInfraBillingRecordDrawerWidget />
-            <UpdateBillingDateModalWidget />
-            <CreateInfraBillingNodeModalWidget />
-
-            <EditNodeByUuidModalWidget key="edit-node-by-uuid-modal" />
-            <NodeUsersUsageDrawer key="node-users-usage-drawer" />
-            <LinkedHostsDrawer key="linked-hosts-drawer" />
-            <NodesUsersUsageStatisticsDrawer key="nodes-users-usage-statistics-drawer" />
         </Page>
     )
 }

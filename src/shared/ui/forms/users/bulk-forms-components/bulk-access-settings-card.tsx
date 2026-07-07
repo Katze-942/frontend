@@ -1,23 +1,23 @@
-import { BulkAllUpdateUsersCommand, GetExternalSquadsCommand } from '@remnawave/backend-contract'
-import { ForwardRefComponent, HTMLMotionProps, Variants } from 'motion/react'
-import { DateTimePicker, getTimeRange } from '@mantine/dates'
-import { TbShield, TbStatusChange } from 'react-icons/tb'
-import { notifications } from '@mantine/notifications'
-import { PiCalendarDuotone } from 'react-icons/pi'
-import { UseFormReturnType } from '@mantine/form'
-import { useTranslation } from 'react-i18next'
 import { Select, Stack } from '@mantine/core'
-import { useState } from 'react'
+import { DateTimePicker, getTimeRange } from '@mantine/dates'
+import { UseFormReturnType } from '@mantine/form'
+import { notifications } from '@mantine/notifications'
+import { BulkAllUpdateUsersCommand, GetExternalSquadsCommand } from '@remnawave/backend-contract'
 import dayjs from 'dayjs'
+import { ForwardRefComponent, HTMLMotionProps, Variants } from 'motion/react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { PiCalendarDuotone } from 'react-icons/pi'
+import { TbShield, TbStatusChange } from 'react-icons/tb'
 
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { userStatusValues } from '@shared/constants/forms'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { SectionCard } from '@shared/ui/section-card'
 
 interface IProps {
     cardVariants: Variants
     externalSquads: GetExternalSquadsCommand.Response['response'] | undefined
-    form: UseFormReturnType<BulkAllUpdateUsersCommand.Request>
+    form: UseFormReturnType<BulkAllUpdateUsersCommand.RequestBody>
     motionWrapper: ForwardRefComponent<HTMLDivElement, HTMLMotionProps<'div'>>
 }
 
@@ -69,16 +69,13 @@ export const BulkAccessSettingsCard = (props: IProps) => {
                         />
 
                         <DateTimePicker
-                            dropdownType="modal"
+                            dropdownType="popover"
                             headerControlsOrder={['previous', 'next', 'level']}
                             highlightToday
                             key={form.key('expireAt')}
                             label={t('create-user-modal.widget.expiry-date')}
                             locale={i18n.language}
                             minDate={new Date()}
-                            modalProps={{
-                                centered: true
-                            }}
                             styles={{
                                 calendarHeaderLevel: {
                                     justifyContent: 'flex-start',

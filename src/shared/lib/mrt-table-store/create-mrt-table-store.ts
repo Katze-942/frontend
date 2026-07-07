@@ -5,10 +5,11 @@ import {
     MRT_ColumnPinningState,
     MRT_ColumnSizingState,
     MRT_PaginationState,
+    MRT_SortingState,
     MRT_VisibilityState
 } from '@kastov/mantine-react-table-open'
-import { createJSONStorage, persist } from 'zustand/middleware'
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export interface MrtTableState {
     columnFilter: MRT_ColumnFiltersState
@@ -18,6 +19,7 @@ export interface MrtTableState {
     columnVisibility: MRT_VisibilityState
     paginationState: MRT_PaginationState
     showColumnFilters: boolean
+    sorting: MRT_SortingState
 }
 
 type Updater<T> = ((prev: T) => T) | T
@@ -31,6 +33,7 @@ export interface MrtTableActions {
     setColumnVisibility: (updater: Updater<MRT_VisibilityState>) => void
     setPaginationState: (updater: Updater<MRT_PaginationState>) => void
     setShowColumnFilters: (updater: Updater<boolean>) => void
+    setSorting: (updater: Updater<MRT_SortingState>) => void
 }
 
 export type MrtTableStore = MrtTableState & { actions: MrtTableActions }
@@ -44,11 +47,21 @@ const BASE_DEFAULTS: MrtTableState = {
     columnSize: {},
     columnVisibility: {},
     paginationState: { ...DEFAULT_PAGINATION_STATE },
-    showColumnFilters: false
+    showColumnFilters: false,
+    sorting: []
 }
 
-const apply = <T,>(updater: Updater<T>, prev: T): T =>
+const apply = <T>(updater: Updater<T>, prev: T): T =>
     typeof updater === 'function' ? (updater as (p: T) => T)(prev) : updater
+
+const isEmptyFilterValue = (value: unknown): boolean =>
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0)
+
+const normalizeColumnFilters = (filters: MRT_ColumnFiltersState): MRT_ColumnFiltersState =>
+    filters.filter((filter) => !isEmptyFilterValue(filter.value))
 
 export interface CreateMrtTableStoreConfig {
     defaults?: Partial<MrtTableState>
@@ -56,11 +69,7 @@ export interface CreateMrtTableStoreConfig {
     version: number
 }
 
-export const createMrtTableStore = ({
-    name,
-    version,
-    defaults
-}: CreateMrtTableStoreConfig) => {
+export const createMrtTableStore = ({ name, version, defaults }: CreateMrtTableStoreConfig) => {
     const initial: MrtTableState = { ...BASE_DEFAULTS, ...defaults }
 
     return create<MrtTableStore>()(
@@ -70,9 +79,10 @@ export const createMrtTableStore = ({
                 actions: {
                     resetState: () => set({ ...initial }),
                     setColumnFilter: (u) =>
-                        set((s) => ({ columnFilter: apply(u, s.columnFilter) })),
-                    setColumnOrder: (u) =>
-                        set((s) => ({ columnOrder: apply(u, s.columnOrder) })),
+                        set((s) => ({
+                            columnFilter: normalizeColumnFilters(apply(u, s.columnFilter))
+                        })),
+                    setColumnOrder: (u) => set((s) => ({ columnOrder: apply(u, s.columnOrder) })),
                     setColumnPinning: (u) =>
                         set((s) => ({ columnPinning: apply(u, s.columnPinning) })),
                     setColumnSize: (u) => set((s) => ({ columnSize: apply(u, s.columnSize) })),
@@ -81,7 +91,8 @@ export const createMrtTableStore = ({
                     setPaginationState: (u) =>
                         set((s) => ({ paginationState: apply(u, s.paginationState) })),
                     setShowColumnFilters: (u) =>
-                        set((s) => ({ showColumnFilters: apply(u, s.showColumnFilters) }))
+                        set((s) => ({ showColumnFilters: apply(u, s.showColumnFilters) })),
+                    setSorting: (u) => set((s) => ({ sorting: apply(u, s.sorting) }))
                 }
             }),
             {
@@ -95,9 +106,15 @@ export const createMrtTableStore = ({
                     columnSize: state.columnSize,
                     columnVisibility: state.columnVisibility,
                     paginationState: state.paginationState,
-                    showColumnFilters: state.showColumnFilters
+                    showColumnFilters: state.showColumnFilters,
+                    sorting: state.sorting
                 }),
-                migrate: () => initial
+                migrate: () => initial,
+                onRehydrateStorage: () => (state) => {
+                    if (state) {
+                        state.columnFilter = normalizeColumnFilters(state.columnFilter)
+                    }
+                }
             }
         )
     )

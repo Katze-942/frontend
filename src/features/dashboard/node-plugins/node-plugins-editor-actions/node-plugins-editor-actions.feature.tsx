@@ -1,5 +1,14 @@
 import type { editor } from 'monaco-editor'
 
+import { ActionIcon, Button, Group, Menu } from '@mantine/core'
+import { useClipboard, useDisclosure } from '@mantine/hooks'
+import { notifications } from '@mantine/notifications'
+import { Monaco } from '@monaco-editor/react'
+import { UpdateNodePluginCommand } from '@remnawave/backend-contract'
+import consola from 'consola/browser'
+import { RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
+import { PiCheckSquareOffset, PiFloppyDisk } from 'react-icons/pi'
 import {
     TbClipboardCopy,
     TbClipboardText,
@@ -8,20 +17,11 @@ import {
     TbMenuDeep,
     TbSelectAll
 } from 'react-icons/tb'
-import { UpdateNodePluginCommand } from '@remnawave/backend-contract'
-import { PiCheckSquareOffset, PiFloppyDisk } from 'react-icons/pi'
-import { ActionIcon, Button, Group, Menu } from '@mantine/core'
-import { useClipboard, useDisclosure } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
-import { useTranslation } from 'react-i18next'
-import { Monaco } from '@monaco-editor/react'
-import consola from 'consola/browser'
-import { RefObject } from 'react'
 
-import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
+import { queryClient } from '@shared/api'
 import { QueryKeys, useUpdateNodePlugin } from '@shared/api/hooks'
 import { useIsMobile } from '@shared/hooks'
-import { queryClient } from '@shared/api'
+import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
 
 interface Props {
     editorRef: RefObject<editor.IStandaloneCodeEditor | null>

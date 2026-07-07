@@ -9,32 +9,33 @@ import {
     Select,
     Stack,
     TagsInput,
-    Text
+    Text,
+    Textarea
 } from '@mantine/core'
-import { BulkNodesUpdateCommand, GetAllNodesCommand } from '@remnawave/backend-contract'
-import { TbCheck, TbMapPin, TbMinus, TbPackage, TbPlus } from 'react-icons/tb'
-import { zodResolver } from 'mantine-form-zod-resolver'
-import { HiQuestionMarkCircle } from 'react-icons/hi'
-import { useTranslation } from 'react-i18next'
-import { PiTagDuotone } from 'react-icons/pi'
+import { useForm, schemaResolver } from '@mantine/form'
 import { modals } from '@mantine/modals'
-import { useForm } from '@mantine/form'
+import { BulkNodesUpdateCommand, GetNodesCommand } from '@remnawave/backend-contract'
 import { motion } from 'motion/react'
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import { HiQuestionMarkCircle } from 'react-icons/hi'
+import { PiTagDuotone } from 'react-icons/pi'
+import { TbCheck, TbMapPin, TbMinus, TbPackage, TbPlus } from 'react-icons/tb'
 
-import { SelectInfraProviderShared } from '@shared/ui/infra-billing/select-infra-provider/select-infra-provider.shared'
 import {
     QueryKeys,
     useBulkNodesUpdate,
     useGetNodePlugins,
     useGetNodesTags
 } from '@shared/api/hooks'
-import { COUNTRIES } from '@shared/ui/forms/nodes/base-node-form/constants'
-import { LoaderModalShared } from '@shared/ui/loader-modal'
 import { queryClient } from '@shared/api/query-client'
+import { COUNTRIES } from '@shared/ui/forms/nodes/base-node-form/constants'
+import { SelectInfraProviderShared } from '@shared/ui/infra-billing/select-infra-provider/select-infra-provider.shared'
+import { LoaderModalShared } from '@shared/ui/loader-modal'
 import { SectionCard } from '@shared/ui/section-card'
+import { TagInputPill } from '@shared/ui/tag-input-pill'
 
-type NodeType = GetAllNodesCommand.Response['response'][number]
+type NodeType = GetNodesCommand.Response['response'][number]
 
 interface IProps {
     selectedRecords: NodeType[]
@@ -47,22 +48,26 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
     const { mutateAsync: bulkUpdate, isPending } = useBulkNodesUpdate()
     const { data: nodePlugins, isLoading: isNodePluginsLoading } = useGetNodePlugins()
     const { data: tags, isLoading: isTagsLoading } = useGetNodesTags()
-    const handlersRef = useRef<NumberInputHandlers>(null)
+
+    const consumptionMultiplierRef = useRef<NumberInputHandlers>(null)
+    const nodeConsumptionMultiplierRef = useRef<NumberInputHandlers>(null)
 
     const uuids = selectedRecords.map((node) => node.uuid)
 
-    const form = useForm<BulkNodesUpdateCommand.Request>({
+    const form = useForm<BulkNodesUpdateCommand.RequestBody>({
         name: 'bulk-update-nodes-form',
         mode: 'uncontrolled',
-        validate: zodResolver(BulkNodesUpdateCommand.RequestSchema),
+        validate: schemaResolver(BulkNodesUpdateCommand.RequestBodySchema),
         initialValues: {
             uuids,
             fields: {
                 tags: undefined,
                 countryCode: undefined,
                 consumptionMultiplier: undefined,
+                nodeConsumptionMultiplier: undefined,
                 providerUuid: undefined,
-                activePluginUuid: undefined
+                activePluginUuid: undefined,
+                note: undefined
             }
         }
     })
@@ -150,7 +155,7 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
                             clearable
                             data={tags?.tags || []}
                             key={form.key('fields.tags')}
-                            label="Tags"
+                            label={t('use-nodes-table-widget.tags')}
                             leftSection={<PiTagDuotone size="16px" />}
                             maxTags={10}
                             placeholder="Enter tags (comma, space, semicolon)"
@@ -162,6 +167,19 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
                                     .map((key) => form.errors[key])
                                     .join(', ') || form.getInputProps('fields.tags').error
                             }
+                            renderPill={({ value, onRemove }) => (
+                                <TagInputPill onRemove={onRemove} value={value} />
+                            )}
+                        />
+
+                        <Textarea
+                            key={form.key('fields.note')}
+                            label={t('node-tracking-and-billing.card.note')}
+                            resize="vertical"
+                            {...form.getInputProps('fields.note')}
+                            styles={{
+                                label: { fontWeight: 500 }
+                            }}
                         />
                     </Stack>
                 </SectionCard.Section>
@@ -175,13 +193,13 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
                             clampBehavior="strict"
                             decimalScale={1}
                             fixedDecimalScale
-                            handlersRef={handlersRef}
+                            handlersRef={consumptionMultiplierRef}
                             hideControls
                             key={form.key('fields.consumptionMultiplier')}
                             leftSection={
                                 <ActionIcon
                                     color="red"
-                                    onClick={() => handlersRef.current?.decrement()}
+                                    onClick={() => consumptionMultiplierRef.current?.decrement()}
                                     radius="md"
                                     size={rem(44)}
                                     variant="light"
@@ -201,7 +219,7 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
                             rightSection={
                                 <ActionIcon
                                     color="teal"
-                                    onClick={() => handlersRef.current?.increment()}
+                                    onClick={() => consumptionMultiplierRef.current?.increment()}
                                     radius="md"
                                     size={rem(44)}
                                     variant="light"
@@ -244,7 +262,97 @@ export const BulkUpdateNodesModalContent = (props: IProps) => {
                                         </HoverCard.Dropdown>
                                     </HoverCard>
                                     <Text inherit>
-                                        {t('base-node-form.consumption-multiplier')}
+                                        {t('node-consumption.card.user-consumption-multiplier')}
+                                    </Text>
+                                </Group>
+                            }
+                        />
+
+                        <NumberInput
+                            allowDecimal
+                            allowedDecimalSeparators={['.']}
+                            allowNegative={false}
+                            clampBehavior="strict"
+                            decimalScale={1}
+                            fixedDecimalScale
+                            handlersRef={nodeConsumptionMultiplierRef}
+                            hideControls
+                            key={form.key('fields.nodeConsumptionMultiplier')}
+                            leftSection={
+                                <ActionIcon
+                                    color="red"
+                                    onClick={() =>
+                                        nodeConsumptionMultiplierRef.current?.decrement()
+                                    }
+                                    radius="md"
+                                    size={rem(44)}
+                                    variant="light"
+                                >
+                                    <TbMinus size={16} />
+                                </ActionIcon>
+                            }
+                            leftSectionPointerEvents="all"
+                            leftSectionProps={{
+                                style: {
+                                    overflow: 'hidden'
+                                }
+                            }}
+                            leftSectionWidth={40}
+                            max={100.0}
+                            min={0}
+                            rightSection={
+                                <ActionIcon
+                                    color="teal"
+                                    onClick={() =>
+                                        nodeConsumptionMultiplierRef.current?.increment()
+                                    }
+                                    radius="md"
+                                    size={rem(44)}
+                                    variant="light"
+                                >
+                                    <TbPlus size={16} />
+                                </ActionIcon>
+                            }
+                            rightSectionPointerEvents="all"
+                            rightSectionProps={{
+                                style: {
+                                    overflow: 'hidden'
+                                }
+                            }}
+                            rightSectionWidth={40}
+                            step={0.1}
+                            styles={{
+                                input: {
+                                    textAlign: 'center',
+                                    fontWeight: 600
+                                }
+                            }}
+                            {...form.getInputProps('fields.nodeConsumptionMultiplier')}
+                            label={
+                                <Group align="center" gap={3}>
+                                    <HoverCard shadow="md" width={280} withArrow>
+                                        <HoverCard.Target>
+                                            <ActionIcon color="gray" size="xs" variant="subtle">
+                                                <HiQuestionMarkCircle size={20} />
+                                            </ActionIcon>
+                                        </HoverCard.Target>
+                                        <HoverCard.Dropdown>
+                                            <Stack gap="sm">
+                                                <Text c="dimmed" size="sm">
+                                                    {t(
+                                                        'node-consumption.card.node-consumption-multiplier-1'
+                                                    )}
+                                                </Text>
+                                                <Text c="dimmed" size="sm">
+                                                    {t(
+                                                        'node-consumption.card.node-consumption-multiplier-2'
+                                                    )}
+                                                </Text>
+                                            </Stack>
+                                        </HoverCard.Dropdown>
+                                    </HoverCard>
+                                    <Text inherit>
+                                        {t('node-consumption.card.node-consumption-multiplier')}
                                     </Text>
                                 </Group>
                             }

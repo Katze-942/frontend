@@ -1,38 +1,41 @@
-/* eslint-disable camelcase */
+import { UserActionGroupFeature } from '@features/dashboard/users/users-action-group'
+import { useUserTableColumns } from '@features/dashboard/users/users-table/model/use-table-columns'
+import { UsersTableSelectionFeature } from '@features/ui/dashboard/users/users-table-selection/users-table-selection.feature'
 import {
     MantineReactTable,
     MRT_ColumnFilterFnsState,
-    MRT_SortingState,
+    MRT_ShowHideColumnsButton,
+    MRT_ToggleDensePaddingButton,
+    MRT_ToggleFullScreenButton,
     useMantineReactTable
 } from '@kastov/mantine-react-table-open'
-import { useEffect, useLayoutEffect, useState } from 'react'
-import { TbSearch, TbSearchOff } from 'react-icons/tb'
+import { ActionIcon, ActionIconGroup, Badge, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { useSearchParams } from 'react-router-dom'
-import { PiUsersDuotone } from 'react-icons/pi'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PiUsersDuotone } from 'react-icons/pi'
+import { TbBolt, TbEdit } from 'react-icons/tb'
+import { useSearchParams } from 'react-router'
 
-import {
-    useBulkUsersActionsStoreActions,
-    useBulkUsersActionsStoreTableSelection
-} from '@entities/dashboard/users/bulk-users-actions-store'
+import { showModal } from '@shared/_modals/show-modal'
 import {
     useGetExternalSquads,
     useGetInternalSquads,
     useGetNodes,
-    useGetUsersV2,
+    useGetUsers,
     useGetUserTags
 } from '@shared/api/hooks'
-import { UsersTableSelectionFeature } from '@features/ui/dashboard/users/users-table-selection/users-table-selection.feature'
-import { useUserTableColumns } from '@features/dashboard/users/users-table/model/use-table-columns'
-import { DEFAULT_PAGINATION_STATE, useMrtTableBinding } from '@shared/lib/mrt-table-store'
-import { UserActionGroupFeature } from '@features/dashboard/users/users-action-group'
-import { useUsersTableStore } from '@entities/dashboard/users/users-table-store'
-import { useUserModalStoreActions } from '@entities/dashboard/user-modal-store'
 import { SEARCH_PARAMS } from '@shared/constants/search-params'
-import { preventBackScrollTables } from '@shared/utils/misc'
+import { usePreventTableBackScroll } from '@shared/hooks'
+import { DEFAULT_PAGINATION_STATE, useMrtTableBinding } from '@shared/lib/mrt-table-store'
 import { DataTableShared } from '@shared/ui/table'
 import { sToMs } from '@shared/utils/time-utils'
+
+import {
+    useUsersTableSelectionStoreActions,
+    useUsersTableSelectionStoreTableSelection
+} from '@entities/dashboard/users/users-table-selection'
+import { useUsersTableStore } from '@entities/dashboard/users/users-table-store'
 
 export function UserTableWidget() {
     const { t } = useTranslation()
@@ -43,19 +46,17 @@ export function UserTableWidget() {
     const { data: tags } = useGetUserTags()
 
     const tableColumns = useUserTableColumns(internalSquads, externalSquads, nodes)
-    const bulkUsersActionsStoreActions = useBulkUsersActionsStoreActions()
-    const tableSelection = useBulkUsersActionsStoreTableSelection()
-    const userModalActions = useUserModalStoreActions()
+    const usersTableSelectionStoreActions = useUsersTableSelectionStoreActions()
+    const tableSelection = useUsersTableSelectionStoreTableSelection()
     const [searchParams, setSearchParams] = useSearchParams()
 
     const { state: persistedTableState, handlers: persistedTableHandlers } =
         useMrtTableBinding(useUsersTableStore)
 
-    const [sorting, setSorting] = useState<MRT_SortingState>([])
-
     const defaultFilterFns: Record<string, string> = {
         hwidDeviceLimit: 'equals',
-        tag: 'equals'
+        tag: 'equals',
+        trafficLimitBytes: 'between'
     }
 
     const [columnFilterFns, setColumnFilterFns] = useState<MRT_ColumnFilterFnsState>(() =>
@@ -67,21 +68,18 @@ export function UserTableWidget() {
         )
     )
 
-    useLayoutEffect(() => {
-        document.body.addEventListener('wheel', preventBackScrollTables, {
-            passive: false
-        })
-        return () => {
-            document.body.removeEventListener('wheel', preventBackScrollTables)
-        }
-    }, [])
+    usePreventTableBackScroll()
 
     const params = {
         start: persistedTableState.pagination.pageIndex * persistedTableState.pagination.pageSize,
         size: persistedTableState.pagination.pageSize,
-        filters: persistedTableState.columnFilters,
+        filters: persistedTableState.columnFilters.filter(({ value }) =>
+            Array.isArray(value)
+                ? value.some((bound) => bound !== null && bound !== undefined && bound !== '')
+                : value !== null && value !== undefined && value !== ''
+        ),
         filterModes: columnFilterFns,
-        sorting
+        sorting: persistedTableState.sorting
     }
 
     const {
@@ -90,23 +88,31 @@ export function UserTableWidget() {
         isFetching,
         isLoading,
         refetch
-    } = useGetUsersV2({
+    } = useGetUsers({
         query: params,
         rQueryParams: {
             // enabled: bulkUsersActionsStoreActions.getUuidLength() === 0,
-            refetchInterval: bulkUsersActionsStoreActions.getUuidLength() === 0 ? sToMs(25) : false
+            refetchInterval:
+                usersTableSelectionStoreActions.getUuidLength() === 0 ? sToMs(25) : false
         }
     })
 
     useEffect(() => {
-        if (!isLoading && searchParams.get(SEARCH_PARAMS.USER)) {
-            userModalActions.setUserUuid(searchParams.get(SEARCH_PARAMS.USER)!)
-            userModalActions.changeModalState(true)
+        if (isLoading) return
+        const userUuid = searchParams.get(SEARCH_PARAMS.USER)
+        if (!userUuid) return
 
-            searchParams.delete(SEARCH_PARAMS.USER)
-            setSearchParams(searchParams)
-        }
-    }, [searchParams, isLoading])
+        showModal('users_viewUserModal', { userUuid })
+
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev)
+                next.delete(SEARCH_PARAMS.USER)
+                return next
+            },
+            { replace: true }
+        )
+    }, [isLoading, searchParams, setSearchParams])
 
     const table = useMantineReactTable({
         columns: tableColumns,
@@ -124,11 +130,26 @@ export function UserTableWidget() {
             return new Map<string, number>()
         },
         columnFilterDisplayMode: 'subheader',
-        icons: {
-            /* eslint-disable @typescript-eslint/no-explicit-any */
-            IconFilter: (props: any) => <TbSearch size={24} {...props} />,
-            IconFilterOff: (props: any) => <TbSearchOff size={24} {...props} />
+        mantineFilterSelectProps: ({ column }) => {
+            const value = column.getFilterValue()
+            return {
+                clearable: value !== undefined && value !== null && value !== ''
+            }
         },
+        mantineFilterMultiSelectProps: ({ column }) => {
+            const value = column.getFilterValue()
+            const count = Array.isArray(value) ? value.length : 0
+            return {
+                clearable: count > 0,
+                renderPill: () => null,
+                ...(count > 0 && {
+                    leftSection: <Badge variant="soft">{count}</Badge>,
+                    placeholder: '',
+                    clearSectionMode: 'clear'
+                })
+            }
+        },
+        // mantineTableBodyCellProps: { style: { padding: '2px 6px' } },
         enableFullScreenToggle: true,
         enableSortingRemoval: true,
         enableGlobalFilter: false,
@@ -137,19 +158,39 @@ export function UserTableWidget() {
         enableColumnOrdering: true,
         columnFilterModeOptions: ['contains'],
         initialState: {
-            density: 'xs',
-            pagination: DEFAULT_PAGINATION_STATE
+            density: 'xxs',
+            pagination: DEFAULT_PAGINATION_STATE,
+            sorting: [{ id: 'id', desc: true }]
         },
+        mantineFilterTextInputProps: () => ({
+            placeholder: 'Filter by...'
+        }),
+        mantineTopToolbarProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantineTableHeadProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantineBottomToolbarProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantinePaperProps: {
+            style: {
+                '--paper-radius': 'var(--mantine-radius-xs)'
+            },
+            withBorder: false
+        },
+        enableDensityToggle: true,
         manualFiltering: true,
         manualPagination: true,
         manualSorting: true,
-        // mantinePaginationProps: {
-        //     rowsPerPageOptions: ['25', '50', '100']
-        // },
-
-        // icons: customIcons,
         enableColumnResizing: true,
-
         /* prettier-ignore */
         mantineToolbarAlertBannerProps: isError ? {
             color: 'red',
@@ -158,13 +199,6 @@ export function UserTableWidget() {
 
         ...persistedTableHandlers,
         onColumnFilterFnsChange: setColumnFilterFns,
-        onSortingChange: setSorting,
-        mantinePaperProps: {
-            style: {
-                '--paper-radius': 'var(--mantine-radius-xs)'
-            },
-            withBorder: false
-        },
         rowCount: usersResponse?.total ?? 0,
         enableRowSelection: true,
         mantineSelectCheckboxProps: {
@@ -188,13 +222,44 @@ export function UserTableWidget() {
             )
         },
         selectAllMode: 'page',
+        renderToolbarInternalActions: ({ table: tableInstance }) => (
+            <>
+                <ActionIconGroup>
+                    <Tooltip label={t('common.bulk-actions')} withArrow>
+                        <ActionIcon
+                            color="green"
+                            onClick={() => showModal('users_bulkAllUsersActionsModal')}
+                            size="lg"
+                            variant="soft"
+                        >
+                            <TbBolt size={20} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label={t('common.bulk-edit')} withArrow>
+                        <ActionIcon
+                            color="red"
+                            onClick={() => showModal('users_bulkAllUsersUpdateModal')}
+                            size="lg"
+                            variant="soft"
+                        >
+                            <TbEdit size={20} />
+                        </ActionIcon>
+                    </Tooltip>
+                </ActionIconGroup>
+                <ActionIconGroup>
+                    <MRT_ToggleDensePaddingButton table={tableInstance} />
+                    <MRT_ToggleFullScreenButton table={tableInstance} />
+                    <MRT_ShowHideColumnsButton table={tableInstance} />
+                </ActionIconGroup>
+            </>
+        ),
         state: {
             ...persistedTableState,
             columnFilterFns,
             isLoading,
             showAlertBanner: isError,
+            showColumnFilters: true,
             showProgressBars: isFetching,
-            sorting,
             rowSelection: tableSelection
         },
         mantineTableBodyRowProps: ({ row }) => ({
@@ -207,14 +272,17 @@ export function UserTableWidget() {
                     })
                     return
                 }
-                await userModalActions.setUserUuid(row.original.uuid)
-                userModalActions.changeModalState(true)
+
+                showModal('users_viewUserModal', { userUuid: row.original.uuid })
+
+                // await userModalActions.setUserUuid(row.original.uuid)
+                // userModalActions.changeModalState(true)
             },
             style: {
                 cursor: 'pointer'
             }
         }),
-        onRowSelectionChange: bulkUsersActionsStoreActions.setTableSelection,
+        onRowSelectionChange: usersTableSelectionStoreActions.setTableSelection,
         getRowId: (originalRow) => originalRow.uuid
     })
 

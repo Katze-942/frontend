@@ -1,15 +1,14 @@
-import { UpdateSubscriptionSettingsCommand } from '@remnawave/backend-contract'
 import { Button, Group, px, Stack, Textarea } from '@mantine/core'
-import { PiDeviceMobile, PiGear } from 'react-icons/pi'
-import { zodResolver } from 'mantine-form-zod-resolver'
+import { useForm, schemaResolver } from '@mantine/form'
+import { UpdateSubscriptionSettingsCommand } from '@remnawave/backend-contract'
 import { useTranslation } from 'react-i18next'
-import { useForm } from '@mantine/form'
+import { PiDeviceMobile, PiGear } from 'react-icons/pi'
 
+import { queryClient } from '@shared/api'
 import { QueryKeys, useUpdateSubscriptionSettings } from '@shared/api/hooks'
 import { TemplateInfoPopoverShared } from '@shared/ui/popovers'
 import { SettingsCardShared } from '@shared/ui/settings-card'
 import { handleFormErrors } from '@shared/utils/misc'
-import { queryClient } from '@shared/api'
 
 interface IProps {
     subscriptionSettings: UpdateSubscriptionSettingsCommand.Response['response']
@@ -19,10 +18,10 @@ export const SubscriptionAnnounceRoutingCardWidget = (props: IProps) => {
     const { subscriptionSettings } = props
     const { t } = useTranslation()
 
-    const form = useForm<UpdateSubscriptionSettingsCommand.Request>({
+    const form = useForm<UpdateSubscriptionSettingsCommand.RequestBody>({
         name: 'subscription-announce-routing-card-form',
         mode: 'uncontrolled',
-        validate: zodResolver(UpdateSubscriptionSettingsCommand.RequestSchema),
+        validate: schemaResolver(UpdateSubscriptionSettingsCommand.RequestBodySchema),
         initialValues: {
             uuid: subscriptionSettings.uuid,
             happAnnounce: subscriptionSettings.happAnnounce,

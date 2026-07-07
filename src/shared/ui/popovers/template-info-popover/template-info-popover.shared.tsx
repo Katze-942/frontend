@@ -1,13 +1,13 @@
-import { TSubscriptionPageTemplateKey } from '@remnawave/subscription-page-types'
-import { TEMPLATE_KEYS, TemplateKeys } from '@remnawave/backend-contract'
 import { ActionIcon, SimpleGrid, Stack, Text } from '@mantine/core'
+import { modals } from '@mantine/modals'
+import { TEMPLATE_KEYS, TemplateKeys } from '@remnawave/backend-contract'
+import { TSubscriptionPageTemplateKey } from '@remnawave/subscription-page-types'
 import { useTranslation } from 'react-i18next'
 import { TbInfoSquare } from 'react-icons/tb'
-import { modals } from '@mantine/modals'
 
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { CopyableCodeBlock } from '@shared/ui/copyable-code-block'
 import { useIsMobile } from '@shared/hooks'
+import { CopyableCodeBlock } from '@shared/ui/copyable-code-block'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 
 interface IProps {
     templateKeys?: readonly TemplateKeys[] | readonly TSubscriptionPageTemplateKey[]

@@ -1,8 +1,7 @@
+import type { MrtTableStore } from './create-mrt-table-store'
 import type { StoreApi, UseBoundStore } from 'zustand'
 
 import { useShallow } from 'zustand/react/shallow'
-
-import type { MrtTableStore } from './create-mrt-table-store'
 
 export const useMrtTableBinding = (useStore: UseBoundStore<StoreApi<MrtTableStore>>) => {
     const state = useStore(
@@ -13,7 +12,8 @@ export const useMrtTableBinding = (useStore: UseBoundStore<StoreApi<MrtTableStor
             columnSizing: s.columnSize,
             columnVisibility: s.columnVisibility,
             pagination: s.paginationState,
-            showColumnFilters: s.showColumnFilters
+            showColumnFilters: s.showColumnFilters,
+            sorting: s.sorting
         }))
     )
     const actions = useStore((s) => s.actions)
@@ -27,7 +27,8 @@ export const useMrtTableBinding = (useStore: UseBoundStore<StoreApi<MrtTableStor
             onColumnSizingChange: actions.setColumnSize,
             onColumnVisibilityChange: actions.setColumnVisibility,
             onPaginationChange: actions.setPaginationState,
-            onShowColumnFiltersChange: actions.setShowColumnFilters
+            onShowColumnFiltersChange: actions.setShowColumnFilters,
+            onSortingChange: actions.setSorting
         }
     }
 }

@@ -1,7 +1,7 @@
-import { PiUserCircle } from 'react-icons/pi'
 import { ActionIcon } from '@mantine/core'
+import { PiUserCircle } from 'react-icons/pi'
 
-import { useUserModalStoreActions } from '@entities/dashboard/user-modal-store'
+import { showModal } from '@shared/_modals/show-modal'
 import { useResolveUser } from '@shared/api/hooks'
 
 interface IProps {
@@ -12,7 +12,6 @@ export function ResolveUserActionShared(props: IProps) {
     const { userId } = props
 
     const { mutateAsync: resolveUser, isPending } = useResolveUser()
-    const userModalActions = useUserModalStoreActions()
 
     return (
         <ActionIcon
@@ -23,8 +22,7 @@ export function ResolveUserActionShared(props: IProps) {
                         id: Number(userId)
                     }
                 }).then(async (result) => {
-                    await userModalActions.setUserUuid(result.uuid)
-                    userModalActions.changeModalState(true)
+                    showModal('users_viewUserModal', { userUuid: result.uuid })
                 })
             }}
             size="input-sm"

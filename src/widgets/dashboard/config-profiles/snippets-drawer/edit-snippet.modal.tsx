@@ -1,14 +1,20 @@
 import type { editor } from 'monaco-editor'
 
-import { UpdateSnippetCommand } from '@remnawave/backend-contract'
+import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
 import { Button, Code, Group, Paper, Stack } from '@mantine/core'
-import { Editor, Monaco, useMonaco } from '@monaco-editor/react'
-import { zodResolver } from 'mantine-form-zod-resolver'
-import { useTranslation } from 'react-i18next'
-import { useEffect, useRef } from 'react'
+import { useForm, schemaResolver } from '@mantine/form'
 import { modals } from '@mantine/modals'
-import { useForm } from '@mantine/form'
+import { Editor, Monaco, useMonaco } from '@monaco-editor/react'
+import { UpdateSnippetCommand } from '@remnawave/backend-contract'
+import { t } from 'i18next'
+import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
+import { queryClient } from '@shared/api'
+import { useUpdateSnippet } from '@shared/api/hooks'
+import { QueryKeys } from '@shared/api/hooks/keys-factory'
+import { monacoTheme } from '@shared/constants/monaco-theme'
+import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
 import {
     createBrowserDraftHash,
     getEditSnippetDraftKey,
@@ -16,12 +22,6 @@ import {
     removeBrowserDraft,
     writeBrowserDraft
 } from '@shared/utils/browser-draft-storage'
-import { MonacoSetupSnippetsFeature } from '@features/dashboard/config-profiles/monaco-setup'
-import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
-import { monacoTheme } from '@shared/constants/monaco-theme'
-import { QueryKeys } from '@shared/api/hooks/keys-factory'
-import { useUpdateSnippet } from '@shared/api/hooks'
-import { queryClient } from '@shared/api'
 
 import classes from './SnippetsDrawer.module.css'
 
@@ -34,7 +34,7 @@ interface IProps {
 export const EditSnippetModal = (props: IProps) => {
     const { snippet } = props
 
-    const { t, i18n } = useTranslation()
+    const { i18n } = useTranslation()
 
     const monaco = useMonaco()
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
@@ -43,14 +43,24 @@ export const EditSnippetModal = (props: IProps) => {
     const draftKey = getEditSnippetDraftKey(snippet.name)
     const originalSnippetValue = JSON.stringify(snippet.snippet || [], null, 2)
 
-    const editSnippetForm = useForm<UpdateSnippetCommand.Request>({
+    const { mutate: updateSnippet, isPending: isUpdating } = useUpdateSnippet({
+        mutationFns: {
+            onSuccess: () => {
+                queryClient.refetchQueries({ queryKey: QueryKeys.snippets.getSnippets.queryKey })
+                clearDraft()
+                modals.close(EDIT_SNIPPET_MODAL_ID)
+            }
+        }
+    })
+
+    const editSnippetForm = useForm<UpdateSnippetCommand.RequestBody>({
         name: 'edit-snippet-form',
         mode: 'uncontrolled',
         validateInputOnBlur: true,
-        validate: zodResolver(UpdateSnippetCommand.RequestSchema),
+        validate: schemaResolver(UpdateSnippetCommand.RequestBodySchema),
         initialValues: {
             name: snippet.name,
-            snippet: snippet.snippet as unknown as UpdateSnippetCommand.Request['snippet']
+            snippet: snippet.snippet as unknown as UpdateSnippetCommand.RequestBody['snippet']
         }
     })
 
@@ -83,16 +93,6 @@ export const EditSnippetModal = (props: IProps) => {
         clearDraftAutosaveTimeout()
         removeBrowserDraft(draftKey)
     }
-
-    const { mutate: updateSnippet, isPending: isUpdating } = useUpdateSnippet({
-        mutationFns: {
-            onSuccess: () => {
-                queryClient.refetchQueries({ queryKey: QueryKeys.snippets.getSnippets.queryKey })
-                clearDraft()
-                modals.close(EDIT_SNIPPET_MODAL_ID)
-            }
-        }
-    })
 
     const validateSnippetValue = (value: string) => {
         try {
@@ -170,7 +170,7 @@ export const EditSnippetModal = (props: IProps) => {
         })
     }
 
-    const handleUpdate = (values: UpdateSnippetCommand.Request) => {
+    const handleUpdate = (values: UpdateSnippetCommand.RequestBody) => {
         if (!editorRef.current) return
 
         const currentTextValue = editorRef.current.getValue()

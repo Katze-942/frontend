@@ -1,15 +1,15 @@
+import { Group, NumberInput, Select, Stack, TextInput } from '@mantine/core'
+import { UseFormReturnType } from '@mantine/form'
 import {
     CreateNodeCommand,
     GetNodePluginsCommand,
-    GetPubKeyCommand,
+    GetNodeSecretKeyCommand,
     UpdateNodeCommand
 } from '@remnawave/backend-contract'
-import { TbCertificate, TbMapPin, TbPackage, TbUserCheck, TbWorld } from 'react-icons/tb'
 import { ForwardRefComponent, HTMLMotionProps, Variants } from 'motion/react'
-import { Group, NumberInput, Select, Stack, TextInput } from '@mantine/core'
-import { UseFormReturnType } from '@mantine/form'
-import { HiOutlineServer } from 'react-icons/hi'
 import { useTranslation } from 'react-i18next'
+import { HiOutlineServer } from 'react-icons/hi'
+import { TbCertificate, TbMapPin, TbNetwork, TbPackage, TbUserCheck, TbWorld } from 'react-icons/tb'
 
 import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
@@ -17,20 +17,22 @@ import { SectionCard } from '@shared/ui/section-card'
 
 import { COUNTRIES } from './constants'
 
-interface IProps<T extends CreateNodeCommand.Request | UpdateNodeCommand.Request> {
+interface IProps<T extends CreateNodeCommand.RequestBody | UpdateNodeCommand.RequestBody> {
     cardVariants: Variants
     form: UseFormReturnType<T>
     motionWrapper: ForwardRefComponent<HTMLDivElement, HTMLMotionProps<'div'>>
     nodePlugins: GetNodePluginsCommand.Response['response']['nodePlugins']
     nodeUuid: string
-    pubKey: GetPubKeyCommand.Response['response'] | undefined
+    secretKey: GetNodeSecretKeyCommand.Response['response'] | undefined
 }
 
-export const NodeVitalsCard = <T extends CreateNodeCommand.Request | UpdateNodeCommand.Request>(
+export const NodeVitalsCard = <
+    T extends CreateNodeCommand.RequestBody | UpdateNodeCommand.RequestBody
+>(
     props: IProps<T>
 ) => {
     const { t } = useTranslation()
-    const { cardVariants, form, motionWrapper, nodePlugins, pubKey, nodeUuid } = props
+    const { cardVariants, form, motionWrapper, nodePlugins, secretKey, nodeUuid } = props
 
     const MotionWrapper = motionWrapper
 
@@ -112,7 +114,7 @@ export const NodeVitalsCard = <T extends CreateNodeCommand.Request | UpdateNodeC
                             label="Secret Key (SECRET_KEY)"
                             leftSection={<TbCertificate size={16} />}
                             size="sm"
-                            value={`${pubKey?.pubKey.trimEnd() ?? 'Error loading...'}`}
+                            value={`${secretKey?.secretKey.trimEnd() ?? 'Error loading...'}`}
                         />
 
                         <Select
@@ -135,6 +137,15 @@ export const NodeVitalsCard = <T extends CreateNodeCommand.Request | UpdateNodeC
                             styles={{
                                 label: { fontWeight: 500 }
                             }}
+                        />
+
+                        <TextInput
+                            key={form.key('proxyUrl')}
+                            label={t('node-vitals.card.proxy-url')}
+                            {...form.getInputProps('proxyUrl')}
+                            description={t('node-vitals.card.proxy-url-description')}
+                            leftSection={<TbNetwork size={16} />}
+                            placeholder="socks5://user:pass@address:port"
                         />
                     </Stack>
                 </SectionCard.Section>

@@ -2,8 +2,8 @@ import type { editor } from 'monaco-editor'
 
 import { GetSnippetsCommand } from '@remnawave/backend-contract'
 import consola from 'consola/browser'
-import { RefObject } from 'react'
 import dayjs from 'dayjs'
+import { RefObject } from 'react'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const replaceSnippetsInArray = (array: any[], snippetsMap: Map<string, unknown>): void => {
@@ -75,13 +75,9 @@ export const ConfigValidationFeature = {
         } catch (err: unknown) {
             const message = (err as Error).message
             if (message?.includes('Go program has already exited')) {
-                setResult(
-                    `${dayjs().format('HH:mm:ss')} | WASM module crashed, restarting...`
-                )
+                setResult(`${dayjs().format('HH:mm:ss')} | WASM module crashed, restarting...`)
             } else {
-                setResult(
-                    `${dayjs().format('HH:mm:ss')} | Validation error: ${message}`
-                )
+                setResult(`${dayjs().format('HH:mm:ss')} | Validation error: ${message}`)
             }
             setIsConfigValid(false)
         }

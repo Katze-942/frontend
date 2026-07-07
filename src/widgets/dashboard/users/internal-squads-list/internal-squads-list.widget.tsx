@@ -1,10 +1,10 @@
-import { GetInternalSquadsCommand } from '@remnawave/backend-contract'
 import { Checkbox, Stack, Text, TextInput } from '@mantine/core'
+import { GetInternalSquadsCommand } from '@remnawave/backend-contract'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { TbCirclesRelation } from 'react-icons/tb'
-import { useTranslation } from 'react-i18next'
 import { Key, memo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PiEmpty } from 'react-icons/pi'
+import { TbCirclesRelation } from 'react-icons/tb'
 
 import { InternalSquadCheckboxCard } from '../internal-squad-checkbox-card'
 

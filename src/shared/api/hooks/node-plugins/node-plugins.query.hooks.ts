@@ -1,10 +1,10 @@
+import { createQueryKeys } from '@lukemorales/query-key-factory'
 import {
     GetNodePluginCommand,
     GetNodePluginsCommand,
     GetTorrentBlockerReportsCommand,
     GetTorrentBlockerReportsStatsCommand
 } from '@remnawave/backend-contract'
-import { createQueryKeys } from '@lukemorales/query-key-factory'
 import { keepPreviousData } from '@tanstack/react-query'
 
 import { sToMs } from '@shared/utils/time-utils'
@@ -12,7 +12,7 @@ import { sToMs } from '@shared/utils/time-utils'
 import { createGetQueryHook, errorHandler } from '../../tsq-helpers'
 
 export const nodePluginsQueryKeys = createQueryKeys('nodePlugins', {
-    getNodePlugin: (route: GetNodePluginCommand.Request) => ({
+    getNodePlugin: (route: GetNodePluginCommand.RequestParam) => ({
         queryKey: [route]
     }),
     getNodePlugins: {
@@ -28,7 +28,7 @@ export const nodePluginsQueryKeys = createQueryKeys('nodePlugins', {
 
 export const useGetNodePlugin = createGetQueryHook({
     endpoint: GetNodePluginCommand.TSQ_url,
-    routeParamsSchema: GetNodePluginCommand.RequestSchema,
+    routeParamsSchema: GetNodePluginCommand.RequestParamSchema,
     responseSchema: GetNodePluginCommand.ResponseSchema,
     getQueryKey: ({ route }) => nodePluginsQueryKeys.getNodePlugin(route!).queryKey,
     rQueryParams: {

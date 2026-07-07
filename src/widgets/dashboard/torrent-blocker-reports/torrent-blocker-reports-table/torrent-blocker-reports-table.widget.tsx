@@ -1,31 +1,44 @@
-/* eslint-disable camelcase */
 import {
     MantineReactTable,
     MRT_ColumnFilterFnsState,
-    MRT_SortingState,
+    MRT_ShowHideColumnsButton,
+    MRT_ToggleDensePaddingButton,
+    MRT_ToggleFullScreenButton,
     useMantineReactTable
 } from '@kastov/mantine-react-table-open'
-import { TbExternalLink, TbFlame, TbJson, TbRefresh, TbRestore, TbTrash } from 'react-icons/tb'
 import { ActionIcon, ActionIconGroup, Box, Tooltip } from '@mantine/core'
+import { modals } from '@mantine/modals'
 import { githubDarkTheme, JsonEditor } from 'json-edit-react'
-import { useLayoutEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PiUserCircle } from 'react-icons/pi'
-import { modals } from '@mantine/modals'
+import {
+    TbExternalLink,
+    TbFilterOff,
+    TbFlame,
+    TbJson,
+    TbRefresh,
+    TbRestore,
+    TbTrash
+} from 'react-icons/tb'
 
+import { showModal } from '@shared/_modals/show-modal'
 import {
     useGetNodes,
     useGetTorrentBlockerReports,
     useGetTorrentBlockerStats,
     useTruncateTorrentBlockerReports
 } from '@shared/api/hooks'
-import { useTbReportsTableStore } from '@entities/dashboard/torrent-blocker-reports/tb-reports-table-store'
+import { usePreventTableBackScroll } from '@shared/hooks'
 import { DEFAULT_PAGINATION_STATE, useMrtTableBinding } from '@shared/lib/mrt-table-store'
-import { useUserModalStoreActions } from '@entities/dashboard/user-modal-store'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { preventBackScrollTables } from '@shared/utils/misc'
 import { DataTableShared } from '@shared/ui/table'
 import { sToMs } from '@shared/utils/time-utils'
+
+import {
+    useTbReportsTableStore,
+    useTbReportsTableStoreActions
+} from '@entities/dashboard/torrent-blocker-reports/tb-reports-table-store'
 
 import { useTbReportsTableColumns } from './use-tb-reports-table-columns'
 
@@ -35,13 +48,12 @@ export function TorrentBlockerReportsTableWidget() {
     const { data: nodes } = useGetNodes()
     const { refetch: refetchTorrentBlockerStats } = useGetTorrentBlockerStats()
 
+    const actions = useTbReportsTableStoreActions()
+
     const tableColumns = useTbReportsTableColumns(nodes)
-    const userModalActions = useUserModalStoreActions()
 
     const { state: persistedTableState, handlers: persistedTableHandlers } =
         useMrtTableBinding(useTbReportsTableStore)
-
-    const [sorting, setSorting] = useState<MRT_SortingState>([])
 
     const [columnFilterFns, setColumnFilterFns] = useState<MRT_ColumnFilterFnsState>(
         Object.fromEntries(tableColumns.map(({ accessorKey }) => [accessorKey, 'contains']))
@@ -52,7 +64,7 @@ export function TorrentBlockerReportsTableWidget() {
         size: persistedTableState.pagination.pageSize,
         filters: persistedTableState.columnFilters,
         filterModes: columnFilterFns,
-        sorting
+        sorting: persistedTableState.sorting
     }
 
     const {
@@ -75,14 +87,7 @@ export function TorrentBlockerReportsTableWidget() {
         refetch()
     }
 
-    useLayoutEffect(() => {
-        document.body.addEventListener('wheel', preventBackScrollTables, {
-            passive: false
-        })
-        return () => {
-            document.body.removeEventListener('wheel', preventBackScrollTables)
-        }
-    }, [])
+    usePreventTableBackScroll()
 
     const table = useMantineReactTable({
         columns: tableColumns,
@@ -94,8 +99,9 @@ export function TorrentBlockerReportsTableWidget() {
         enableColumnOrdering: true,
         columnFilterModeOptions: ['contains', 'equals'],
         initialState: {
-            density: 'xs',
-            pagination: DEFAULT_PAGINATION_STATE
+            density: 'xxs',
+            pagination: DEFAULT_PAGINATION_STATE,
+            sorting: [{ id: 'createdAt', desc: true }]
         },
         manualFiltering: true,
         manualPagination: true,
@@ -111,12 +117,6 @@ export function TorrentBlockerReportsTableWidget() {
 
         ...persistedTableHandlers,
         onColumnFilterFnsChange: setColumnFilterFns,
-        onSortingChange: setSorting,
-
-        mantinePaperProps: {
-            style: { '--paper-radius': 'var(--mantine-radius-xs)' },
-            withBorder: false
-        },
         rowCount: tbReportsResponse?.total ?? 0,
         enableRowSelection: false,
         enableColumnPinning: true,
@@ -126,17 +126,40 @@ export function TorrentBlockerReportsTableWidget() {
             ...persistedTableState,
             columnFilterFns,
             isLoading,
+            showColumnFilters: true,
             showAlertBanner: isError,
-            showProgressBars: isFetching,
-            sorting
+            showProgressBars: isFetching
         },
         enableRowActions: true,
+        mantineFilterTextInputProps: () => ({
+            placeholder: 'Filter by...'
+        }),
+        mantineTopToolbarProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantineTableHeadProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantineBottomToolbarProps: {
+            style: {
+                '--mrt-base-background-color': '#1b2027'
+            }
+        },
+        mantinePaperProps: {
+            style: {
+                '--paper-radius': 'var(--mantine-radius-xs)'
+            },
+            withBorder: false
+        },
         renderRowActions: ({ row }) => (
             <ActionIconGroup>
                 <ActionIcon
                     onClick={async () => {
-                        await userModalActions.setUserUuid(row.original.user.uuid)
-                        userModalActions.changeModalState(true)
+                        showModal('users_viewUserModal', { userUuid: row.original.user.uuid })
                     }}
                     size="input-sm"
                     variant="soft"
@@ -196,7 +219,14 @@ export function TorrentBlockerReportsTableWidget() {
         getRowId: (originalRow) => `${originalRow.id}`,
         displayColumnDefOptions: {
             'mrt-row-actions': { size: 130 }
-        }
+        },
+        renderToolbarInternalActions: ({ table: tableInstance }) => (
+            <>
+                <MRT_ToggleDensePaddingButton table={tableInstance} />
+                <MRT_ToggleFullScreenButton table={tableInstance} />
+                <MRT_ShowHideColumnsButton table={tableInstance} />
+            </>
+        )
     })
 
     return (
@@ -252,19 +282,39 @@ export function TorrentBlockerReportsTableWidget() {
                             </ActionIcon>
                         </Tooltip>
 
+                        <Tooltip label={t('action-group.feature.clear-filters')} withArrow>
+                            <ActionIcon
+                                color="gray"
+                                loading={isLoading}
+                                onClick={() => {
+                                    refetch()
+
+                                    table.resetPageIndex(false)
+                                    table.resetSorting(false)
+                                    table.resetPagination(false)
+                                    table.resetColumnFilters(true)
+                                    table.resetGlobalFilter(true)
+                                }}
+                                size="input-md"
+                                variant="soft"
+                            >
+                                <TbFilterOff size="24px" />
+                            </ActionIcon>
+                        </Tooltip>
+
                         <Tooltip label={t('action-group.feature.reset-table')} withArrow>
                             <ActionIcon
                                 color="gray"
                                 loading={isLoading}
                                 onClick={() => {
+                                    refetch()
+                                    actions.resetState()
+
                                     table.resetPageIndex(false)
-                                    table.resetSorting(true)
+                                    table.resetSorting(false)
                                     table.resetPagination(false)
                                     table.resetColumnFilters(true)
                                     table.resetGlobalFilter(true)
-                                    table.resetColumnOrder(true)
-                                    table.resetColumnPinning(true)
-                                    table.resetColumnVisibility(true)
                                 }}
                                 size="input-md"
                                 variant="soft"

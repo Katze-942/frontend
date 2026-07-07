@@ -1,29 +1,16 @@
-import {
-    ActionIcon,
-    ActionIconGroup,
-    Button,
-    Group,
-    Modal,
-    Stack,
-    Text,
-    TextInput,
-    Tooltip
-} from '@mantine/core'
-import { CreateConfigProfileCommand } from '@remnawave/backend-contract'
-import { generatePath, useNavigate } from 'react-router-dom'
-import { TbCode, TbPlus, TbRefresh } from 'react-icons/tb'
-import { useDisclosure } from '@mantine/hooks'
+import { ActionIcon, ActionIconGroup, Group, Tooltip } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
-import { useField } from '@mantine/form'
+import { TbCode, TbPlus, TbRefresh } from 'react-icons/tb'
+import { useNavigate } from 'react-router'
 
-import { QueryKeys, useCreateConfigProfile, useGetConfigProfiles } from '@shared/api/hooks'
-import { CONFIG_PROFILES_VIEW_MODE } from '@entities/dashboard/view-preferences-store'
-import { UniversalSpotlightActionIconShared } from '@shared/ui/universal-spotlight'
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { HelpActionIconShared } from '@shared/ui/help-drawer'
-import { XrayLogo } from '@shared/ui/logos'
-import { ROUTES } from '@shared/constants'
+import { showModal } from '@shared/_modals/show-modal'
+import { HelpActionIconShared } from '@shared/_modals/universal'
 import { queryClient } from '@shared/api'
+import { QueryKeys, useGetConfigProfiles } from '@shared/api/hooks'
+import { XrayLogo } from '@shared/ui/logos'
+import { UniversalSpotlightActionIconShared } from '@shared/ui/universal-spotlight'
+
+import { CONFIG_PROFILES_VIEW_MODE } from '@entities/dashboard/view-preferences-store'
 
 interface IProps {
     configProfileCount: number
@@ -31,51 +18,11 @@ interface IProps {
     viewMode: CONFIG_PROFILES_VIEW_MODE
 }
 
-const generateDefaultConfig = () => {
-    const randomNumber = Math.floor(Math.random() * 999999) + 1
-
-    return {
-        log: {
-            loglevel: 'info'
-        },
-        inbounds: [
-            {
-                tag: `Shadowsocks_${randomNumber}`,
-                port: 1234,
-                protocol: 'shadowsocks',
-                settings: {
-                    clients: [],
-                    method: 'chacha20-ietf-poly1305',
-                    network: 'tcp,udp'
-                },
-                sniffing: {
-                    enabled: true,
-                    destOverride: ['http', 'tls', 'quic']
-                }
-            }
-        ],
-        outbounds: [
-            {
-                protocol: 'freedom',
-                tag: 'DIRECT'
-            },
-            {
-                protocol: 'blackhole',
-                tag: 'BLOCK'
-            }
-        ],
-        routing: {
-            rules: []
-        }
-    }
-}
-
 export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
     const { configProfileCount, setViewMode, viewMode } = props
     const { isFetching } = useGetConfigProfiles()
     const { t } = useTranslation()
 
-    const [opened, { open, close }] = useDisclosure(false)
     const navigate = useNavigate()
 
     const handleUpdate = async () => {
@@ -83,31 +30,6 @@ export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
             queryKey: QueryKeys.configProfiles.getConfigProfiles.queryKey
         })
     }
-
-    const nameField = useField<CreateConfigProfileCommand.Request['name']>({
-        initialValue: '',
-        validateOnChange: true,
-        validate: (value) => {
-            const result = CreateConfigProfileCommand.RequestSchema.omit({
-                config: true
-            }).safeParse({ name: value })
-            return result.success ? null : result.error.errors[0]?.message
-        }
-    })
-    const { mutate: createConfigProfile, isPending } = useCreateConfigProfile({
-        mutationFns: {
-            onSuccess: (data) => {
-                close()
-                nameField.reset()
-                handleUpdate()
-                navigate(
-                    generatePath(ROUTES.DASHBOARD.MANAGEMENT.CONFIG_PROFILE_BY_UUID, {
-                        uuid: data.uuid
-                    })
-                )
-            }
-        }
-    })
 
     return (
         <Group grow preventGrowOverflow={false} wrap="wrap">
@@ -154,70 +76,21 @@ export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
                     label={t('config-profiles-header-action-buttons.feature.create-config-profile')}
                     withArrow
                 >
-                    <ActionIcon color="teal" onClick={open} size="input-md" variant="soft">
+                    <ActionIcon
+                        color="teal"
+                        onClick={() =>
+                            showModal('createModal', {
+                                createFrom: 'configProfile',
+                                contentOptions: { navigate }
+                            })
+                        }
+                        size="input-md"
+                        variant="soft"
+                    >
                         <TbPlus size="24px" />
                     </ActionIcon>
                 </Tooltip>
             </ActionIconGroup>
-
-            <Modal
-                centered
-                onClose={close}
-                opened={opened}
-                size="md"
-                title={
-                    <BaseOverlayHeader
-                        IconComponent={XrayLogo}
-                        iconVariant="soft"
-                        title={t(
-                            'config-profiles-header-action-buttons.feature.create-config-profile'
-                        )}
-                    />
-                }
-            >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault()
-                        createConfigProfile({
-                            variables: {
-                                name: nameField.getValue(),
-                                config: generateDefaultConfig()
-                            }
-                        })
-                    }}
-                >
-                    <Stack gap="md">
-                        <Text size="sm">
-                            {t(
-                                'config-profiles-header-action-buttons.feature.create-a-new-config-profile-by-entering-a-name-below'
-                            )}
-                            <br />
-
-                            {t(
-                                'config-profiles-header-action-buttons.feature.you-can-customize-xray-config-after-creation'
-                            )}
-                        </Text>
-                        <TextInput
-                            data-autofocus
-                            label={t('config-profiles-header-action-buttons.feature.profile-name')}
-                            placeholder={t(
-                                'config-profiles-header-action-buttons.feature.enter-profile-name'
-                            )}
-                            required
-                            {...nameField.getInputProps()}
-                        />
-                        <Group justify="flex-end">
-                            <Button color="gray" onClick={close} variant="light">
-                                {t('common.cancel')}
-                            </Button>
-
-                            <Button color="teal" loading={isPending} type="submit">
-                                {t('common.create')}
-                            </Button>
-                        </Group>
-                    </Stack>
-                </form>
-            </Modal>
         </Group>
     )
 }

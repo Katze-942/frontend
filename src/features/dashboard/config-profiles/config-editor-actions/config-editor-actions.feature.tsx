@@ -1,3 +1,12 @@
+import { ActionIcon, Button, CopyButton, Group, Menu, Text } from '@mantine/core'
+import { useClipboard, useDisclosure } from '@mantine/hooks'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
+import { UpdateConfigProfileCommand } from '@remnawave/backend-contract'
+import { KeypairGeneratorWidget } from '@widgets/dashboard/config-profiles/keypair-generator/keypair-generator.widget'
+import consola from 'consola/browser'
+import { useTranslation } from 'react-i18next'
+import { PiCheck, PiCheckSquareOffset, PiCopy, PiFloppyDisk } from 'react-icons/pi'
 import {
     TbBraces,
     TbClipboardCopy,
@@ -8,14 +17,12 @@ import {
     TbSelectAll,
     TbTools
 } from 'react-icons/tb'
-import { PiCheck, PiCheckSquareOffset, PiCopy, PiFloppyDisk } from 'react-icons/pi'
-import { ActionIcon, Button, CopyButton, Group, Menu, Text } from '@mantine/core'
-import { UpdateConfigProfileCommand } from '@remnawave/backend-contract'
-import { useClipboard, useDisclosure } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
-import { useTranslation } from 'react-i18next'
-import { modals } from '@mantine/modals'
-import consola from 'consola/browser'
+
+import { queryClient } from '@shared/api'
+import { QueryKeys, useUpdateConfigProfile } from '@shared/api/hooks'
+import { useIsMobile } from '@shared/hooks'
+import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 
 import {
     MODALS,
@@ -23,12 +30,6 @@ import {
     useModalsStoreOpenWithData,
     useModalState
 } from '@entities/dashboard/modal-store'
-import { KeypairGeneratorWidget } from '@widgets/dashboard/config-profiles/keypair-generator/keypair-generator.widget'
-import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { QueryKeys, useUpdateConfigProfile } from '@shared/api/hooks'
-import { useIsMobile } from '@shared/hooks'
-import { queryClient } from '@shared/api'
 
 import classes from './config-editor-actions.module.css'
 import { Props } from './interfaces'

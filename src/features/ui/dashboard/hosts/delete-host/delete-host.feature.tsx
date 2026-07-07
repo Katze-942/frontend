@@ -1,38 +1,56 @@
 import { ActionIcon, Tooltip } from '@mantine/core'
+import { modals } from '@mantine/modals'
 import { useTranslation } from 'react-i18next'
 import { TbTrash } from 'react-icons/tb'
 
-import { MODALS, useModalClose, useModalState } from '@entities/dashboard/modal-store'
+import { hideModal } from '@shared/_modals/show-modal'
 import { useDeleteHost } from '@shared/api/hooks'
 
-export function DeleteHostFeature() {
-    const { t } = useTranslation()
+interface IProps {
+    hostUuid: string
+}
 
-    const { internalState: host } = useModalState(MODALS.EDIT_HOST_MODAL)
-    const close = useModalClose(MODALS.EDIT_HOST_MODAL)
+export function DeleteHostFeature(props: IProps) {
+    const { hostUuid } = props
+
+    const { t } = useTranslation()
 
     const { mutate: deleteHost, isPending: isDeleteHostPending } = useDeleteHost({
         mutationFns: {
             onSuccess: () => {
-                close()
+                hideModal('hosts_editHostDrawer')
             }
         }
     })
 
-    if (!host) return null
-
     const handleDeleteHost = async () => {
-        deleteHost({ route: { uuid: host.uuid } })
+        deleteHost({ route: { uuid: hostUuid } })
     }
+
+    const openModal = () =>
+        modals.openConfirmModal({
+            title: t('common.confirm-action'),
+            children: t('common.confirm-action-description'),
+            labels: {
+                confirm: t('common.delete'),
+                cancel: t('common.cancel')
+            },
+            centered: true,
+            cancelProps: {
+                variant: 'subtle'
+            },
+            confirmProps: { color: 'red', variant: 'soft' },
+            onConfirm: () => handleDeleteHost()
+        })
 
     return (
         <Tooltip label={t('common.delete')}>
             <ActionIcon
                 color="red"
                 loading={isDeleteHostPending}
-                onClick={handleDeleteHost}
+                onClick={openModal}
                 size="xl"
-                variant="light"
+                variant="soft"
             >
                 <TbTrash size="24px" />
             </ActionIcon>

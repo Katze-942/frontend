@@ -1,12 +1,12 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
 import { consola } from 'consola/browser'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { Navigate, useParams } from 'react-router'
+import { app } from 'src/config'
 
 import { useGetConfigProfile, useGetSnippets } from '@shared/api/hooks'
-import { fetchWithProgress } from '@shared/utils/fetch-with-progress'
 import { ROUTES } from '@shared/constants'
 import { LoadingScreen } from '@shared/ui'
-import { app } from 'src/config'
+import { fetchWithProgress } from '@shared/utils/fetch-with-progress'
 
 import { ConfigProfileByUuidPageComponent } from '../components/config-profile-by-uuid.page.component'
 
@@ -51,10 +51,7 @@ export function ConfigProfileByUuidPageConnector() {
             if (wasmBytesCache.current) {
                 wasmBytes = wasmBytesCache.current
             } else {
-                wasmBytes = await fetchWithProgress(
-                    app.configEditor.wasmUrl,
-                    setDownloadProgress
-                )
+                wasmBytes = await fetchWithProgress(app.configEditor.wasmUrl, setDownloadProgress)
                 wasmBytesCache.current = wasmBytes
             }
 

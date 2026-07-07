@@ -1,8 +1,8 @@
 import { Group, Paper, Stack, Text, ThemeIcon, ThemeIconProps, UnstyledButton } from '@mantine/core'
-import { TbArrowRight, TbChevronRight } from 'react-icons/tb'
 import { useClickOutside } from '@mantine/hooks'
-import { useState } from 'react'
 import clsx from 'clsx'
+import { useState } from 'react'
+import { TbArrowRight, TbChevronRight } from 'react-icons/tb'
 
 import styles from './action-card.module.css'
 

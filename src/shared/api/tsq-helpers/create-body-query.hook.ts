@@ -1,9 +1,9 @@
 import { QueryKey, useQuery, UseQueryResult } from '@tanstack/react-query'
 import { z } from 'zod'
 
+import { instance } from '../axios'
 import { createUrl, handleRequestError } from '../helpers'
 import { CreateBodyQueryHookArgs } from '../interfaces'
-import { instance } from '../axios'
 
 type QueryParams<R, Q, B> = {
     body?: B
@@ -23,9 +23,9 @@ type QueryParams<R, Q, B> = {
  * needs a body (typically because filters don't fit in a query string).
  */
 export function createBodyQueryHook<
-    ResponseSchema extends z.ZodType,
-    RequestQuerySchema extends z.ZodType,
-    RouteParamsSchema extends z.ZodType,
+    ResponseSchema extends z.ZodType<{ response: unknown }>,
+    RequestQuerySchema extends z.ZodType<Record<string, unknown>>,
+    RouteParamsSchema extends z.ZodType<Record<string, unknown>>,
     BodySchema extends z.ZodType
 >({
     endpoint,

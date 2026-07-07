@@ -1,18 +1,19 @@
-import { GetConfigProfileByUuidCommand, GetSnippetsCommand } from '@remnawave/backend-contract'
 import { ActionIcon, Box, Drawer, Flex, Group, Transition } from '@mantine/core'
-import { TbArrowBackUp, TbCode, TbFile } from 'react-icons/tb'
 import { useMediaQuery } from '@mantine/hooks'
-import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
-
+import { GetConfigProfileByUuidCommand, GetSnippetsCommand } from '@remnawave/backend-contract'
 import { ConfigEditorWidget } from '@widgets/dashboard/config-profiles/config-editor/config-editor.widget'
-import { SnippetsDrawerWidget } from '@widgets/dashboard/config-profiles/snippets-drawer'
-import { MODALS, useModalClose, useModalIsOpen } from '@entities/dashboard/modal-store'
-import { PageHeaderShared } from '@shared/ui/page-header/page-header.shared'
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { HelpActionIconShared } from '@shared/ui/help-drawer'
+import { SnippetsWidget } from '@widgets/dashboard/config-profiles/snippets-drawer/snippets.widget'
+import { useTranslation } from 'react-i18next'
+import { TbArrowBackUp, TbCode, TbFile } from 'react-icons/tb'
+import { useNavigate } from 'react-router'
+
+import { HelpActionIconShared } from '@shared/_modals/universal'
 import { ROUTES } from '@shared/constants'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { Page } from '@shared/ui/page'
+import { PageHeaderShared } from '@shared/ui/page-header/page-header.shared'
+
+import { MODALS, useModalClose, useModalIsOpen } from '@entities/dashboard/modal-store'
 
 interface Props {
     configProfile: GetConfigProfileByUuidCommand.Response['response']
@@ -59,7 +60,13 @@ export const ConfigProfileByUuidPageComponent = (props: Props) => {
 
                 {isMobile ? (
                     <>
-                        <ConfigEditorWidget configProfile={configProfile} isWasmCrashed={isWasmCrashed} isWasmRestarting={isWasmRestarting} onRestartWasm={onRestartWasm} snippets={snippets} />
+                        <ConfigEditorWidget
+                            configProfile={configProfile}
+                            isWasmCrashed={isWasmCrashed}
+                            isWasmRestarting={isWasmRestarting}
+                            onRestartWasm={onRestartWasm}
+                            snippets={snippets}
+                        />
 
                         <Drawer
                             keepMounted={false}
@@ -77,13 +84,19 @@ export const ConfigProfileByUuidPageComponent = (props: Props) => {
                             }
                             withCloseButton={true}
                         >
-                            <SnippetsDrawerWidget />
+                            <SnippetsWidget />
                         </Drawer>
                     </>
                 ) : (
                     <Flex gap="md">
                         <Box style={{ flex: 1, minWidth: 0 }}>
-                            <ConfigEditorWidget configProfile={configProfile} isWasmCrashed={isWasmCrashed} isWasmRestarting={isWasmRestarting} onRestartWasm={onRestartWasm} snippets={snippets} />
+                            <ConfigEditorWidget
+                                configProfile={configProfile}
+                                isWasmCrashed={isWasmCrashed}
+                                isWasmRestarting={isWasmRestarting}
+                                onRestartWasm={onRestartWasm}
+                                snippets={snippets}
+                            />
                         </Box>
 
                         <Box
@@ -112,7 +125,7 @@ export const ConfigProfileByUuidPageComponent = (props: Props) => {
                                             pointerEvents: isOpen ? 'auto' : 'none'
                                         }}
                                     >
-                                        <SnippetsDrawerWidget />
+                                        <SnippetsWidget />
                                     </Box>
                                 )}
                             </Transition>

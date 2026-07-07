@@ -1,28 +1,42 @@
+import { DeleteHostFeature } from '@features/ui/dashboard/hosts/delete-host'
+import { HostSelectInboundFeature } from '@features/ui/dashboard/hosts/host-select-inbound/host-select-inbound.feature'
 import {
     ActionIcon,
+    Autocomplete,
     Badge,
     Button,
     Checkbox,
-    Drawer,
     Group,
     HoverCard,
-    JsonInput,
     MultiSelect,
     NumberInput,
-    px,
     Select,
     Stack,
     Switch,
     Tabs,
+    TagsInput,
     Text,
     TextInput,
     ThemeIcon,
     Tooltip,
     Transition
 } from '@mantine/core'
+import { modals } from '@mantine/modals'
 import {
-    PiArrowUpDuotone,
-    PiCopyDuotone,
+    ALPN,
+    CreateHostCommand,
+    FINGERPRINTS,
+    MIHOMO_IP_VERSION,
+    SECURITY_LAYERS,
+    SUBSCRIPTION_TEMPLATE_TYPE,
+    UpdateHostCommand,
+    UpdateManyHostsCommand
+} from '@remnawave/backend-contract'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { HiQuestionMarkCircle } from 'react-icons/hi'
+import {
+    PiCaretDown,
     PiFloppyDiskDuotone,
     PiGearSixDuotone,
     PiInfo,
@@ -33,50 +47,32 @@ import {
     PiTag
 } from 'react-icons/pi'
 import {
-    ALPN,
-    CreateHostCommand,
-    FINGERPRINTS,
-    SECURITY_LAYERS,
-    SUBSCRIPTION_TEMPLATE_TYPE,
-    UpdateHostCommand
-} from '@remnawave/backend-contract'
-import {
     TbCirclesRelation,
     TbCloudNetwork,
     TbEye,
     TbFileDescription,
     TbMask,
-    TbServer2
+    TbServer2,
+    TbStar
 } from 'react-icons/tb'
-import { HiQuestionMarkCircle } from 'react-icons/hi'
-import { useDisclosure } from '@mantine/hooks'
-import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 
-import {
-    BASIC_MUX_PARAMS,
-    BASIC_SOCKOPT_PARAMS,
-    BASIC_XHTTP_EXTRA_PARAMS,
-    PASTE_BASIC_XHTTP_EXTRA_PARAMS
-} from '@shared/constants'
-import { HostSelectInboundFeature } from '@features/ui/dashboard/hosts/host-select-inbound/host-select-inbound.feature'
-import { HostTagsInputWidget } from '@widgets/dashboard/hosts/host-tags-input/host-tags-input'
-import { emojiFlag, resolveCountryCode } from '@shared/utils/misc/resolve-country-code'
-import { PopoverWithInfoShared } from '@shared/ui/popovers/popover-with-info'
-import { DeleteHostFeature } from '@features/ui/dashboard/hosts/delete-host'
-import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
-import { MihomoLogo, SingboxLogo, StashLogo } from '@shared/ui/logos'
-import { TemplateInfoPopoverShared } from '@shared/ui/popovers'
+import { useIsMobile } from '@shared/hooks'
 import { ChipMultiSelect } from '@shared/ui/chip-multi-select'
 import { DrawerFooter } from '@shared/ui/drawer-footer'
-import { handleFormErrors } from '@shared/utils/misc'
+import { MihomoLogo, SingboxLogo, StashLogo } from '@shared/ui/logos'
 import { XrayLogo } from '@shared/ui/logos/xray-logo'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TemplateInfoPopoverShared } from '@shared/ui/popovers'
+import { PopoverWithInfoShared } from '@shared/ui/popovers/popover-with-info'
 import { SectionCard } from '@shared/ui/section-card'
+import { TagInputPill } from '@shared/ui/tag-input-pill'
+import { emojiFlag, resolveCountryCode } from '@shared/utils/misc/resolve-country-code'
 
-import { FinalMaskDrawer } from './final-mask.drawer'
-import classes from './HostTabs.module.css'
 import { IProps } from './interfaces'
+import { FINAL_MASK_MODAL_ID, FinalMaskModalContent } from './modals/final-mask.modal.content'
+import { MUX_MODAL_ID, MuxModalContent } from './modals/mux.modal.content'
+import { SOCKOPT_MODAL_ID, SockoptModalContent } from './modals/sockopt.modal.content'
+import { XHTTP_MODAL_ID, XhttpModalContent } from './modals/xhttp.modal.content'
 
 const SUBSCRIPTION_TYPES = {
     [SUBSCRIPTION_TEMPLATE_TYPE.XRAY_JSON]: {
@@ -105,7 +101,12 @@ const SUBSCRIPTION_TYPES = {
     }
 } as const
 
-export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCommand.Request>(
+export const BaseHostForm = <
+    T extends
+        | CreateHostCommand.RequestBody
+        | UpdateHostCommand.RequestBody
+        | UpdateManyHostsCommand.RequestBody
+>(
     props: IProps<T>
 ) => {
     const {
@@ -113,21 +114,17 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
         handleSubmit,
         configProfiles,
         isSubmitting,
-        handleCloneHost,
         nodes,
         internalSquads,
-        subscriptionTemplates
+        subscriptionTemplates,
+        hostTags,
+        removeRequiredFields,
+        hostUuid
     } = props
 
     const { t } = useTranslation()
-    const [opened, { open, close }] = useDisclosure(false)
     const [activeTab, setActiveTab] = useState<null | string>('basic')
-
-    const [muxParamsOpened, { open: openMuxParams, close: closeMuxParams }] = useDisclosure(false)
-    const [sockoptParamsOpened, { open: openSockoptParams, close: closeSockoptParams }] =
-        useDisclosure(false)
-
-    const [finalMaskOpened, { open: openFinalMask, close: closeFinalMask }] = useDisclosure(false)
+    const isMobile = useIsMobile()
 
     const securityLayerLabels = {
         [SECURITY_LAYERS.TLS]: t('base-host-form.tls-transport-layer-security'),
@@ -169,10 +166,6 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
             configProfileUuid: true
         })
     }
-
-    useEffect(() => {
-        handleFormErrors(form, form.errors)
-    }, [form.errors])
 
     const patternHoverCard = (showSingle = true, showMulti = true, showWildcard = true) => {
         return (
@@ -233,62 +226,6 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
         )
     }
 
-    const vlessRouteHoverCard = () => {
-        return (
-            <HoverCard shadow="md" width={300} withArrow>
-                <HoverCard.Target>
-                    <ActionIcon color="gray" size="xs" variant="subtle">
-                        <HiQuestionMarkCircle size={20} />
-                    </ActionIcon>
-                </HoverCard.Target>
-                <HoverCard.Dropdown>
-                    <Stack gap="md">
-                        <Stack gap="sm">
-                            <Text c="dimmed" size="sm">
-                                Refer to the{' '}
-                                <Link
-                                    target="_blank"
-                                    to="https://xtls.github.io/config/routing.html"
-                                >
-                                    XTLS Documentation
-                                </Link>{' '}
-                                for more information.
-                            </Text>
-                        </Stack>
-                    </Stack>
-                </HoverCard.Dropdown>
-            </HoverCard>
-        )
-    }
-
-    const mihomoX25519HoverCard = () => {
-        return (
-            <HoverCard shadow="md" width={280} withArrow>
-                <HoverCard.Target>
-                    <ActionIcon color="gray" size="xs" variant="subtle">
-                        <HiQuestionMarkCircle size={20} />
-                    </ActionIcon>
-                </HoverCard.Target>
-                <HoverCard.Dropdown>
-                    <Stack gap="md">
-                        <Stack gap="sm">
-                            <Text c="dimmed" size="sm">
-                                Refer to the{' '}
-                                <Link
-                                    target="_blank"
-                                    to="https://wiki.metacubex.one/en/config/proxies/tls/#reality-optssupport-x25519mlkem768"
-                                >
-                                    Mihomo Documentation
-                                </Link>{' '}
-                                for more information.
-                            </Text>
-                        </Stack>
-                    </Stack>
-                </HoverCard.Dropdown>
-            </HoverCard>
-        )
-    }
-
     const shuffleHostHoverCard = () => {
         return (
             <HoverCard shadow="md" width={280} withArrow>
@@ -308,6 +245,19 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                 </HoverCard.Dropdown>
             </HoverCard>
         )
+    }
+
+    const tagsInputProps = form.getInputProps('tags')
+
+    const handleTagsChange = (value: string[]) => {
+        tagsInputProps.onChange?.(value)
+
+        form.setErrors((errors) =>
+            Object.fromEntries(
+                Object.entries(errors).filter(([key]) => key !== 'tags' && !key.startsWith('tags.'))
+            )
+        )
+        form.validateField('tags')
     }
 
     return (
@@ -331,12 +281,10 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
             </Group>
 
             <Tabs
-                classNames={classes}
                 keepMounted
                 keepMountedMode="display-none"
                 onChange={setActiveTab}
                 value={activeTab}
-                variant="unstyled"
             >
                 <Tabs.List grow mb="md">
                     <Tabs.Tab key="basic" leftSection={<PiNoteDuotone size={16} />} value="basic">
@@ -378,7 +326,7 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                             label={t('base-host-form.remark')}
                                             {...form.getInputProps('remark')}
                                             leftSection={<TemplateInfoPopoverShared />}
-                                            required
+                                            required={!removeRequiredFields}
                                         />
 
                                         <Stack gap="xs">
@@ -423,7 +371,7 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                 }
                                                 {...form.getInputProps('address')}
                                                 placeholder={t('base-host-form.e-g-example-com')}
-                                                required
+                                                required={!removeRequiredFields}
                                                 rightSection={patternHoverCard(true, true, true)}
                                                 w="65%"
                                             />
@@ -456,15 +404,34 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                 max={65535}
                                                 min={1}
                                                 placeholder={t('base-host-form.e-g-443')}
-                                                required
+                                                required={!removeRequiredFields}
                                                 w="30%"
                                             />
                                         </Group>
 
-                                        <HostTagsInputWidget
-                                            key={form.key('tag')}
-                                            {...form.getInputProps('tag')}
-                                            value={form.getValues().tag}
+                                        <TagsInput
+                                            clearable
+                                            data={hostTags ?? []}
+                                            description={t(
+                                                'host-tags-input.tags-are-not-visible-to-end-users-tag-will-be-sent-with-raw-subscription-only'
+                                            )}
+                                            key={form.key('tags')}
+                                            label={t('use-nodes-table-widget.tags')}
+                                            leftSection={<TbStar size="16px" />}
+                                            maxTags={10}
+                                            placeholder="Enter tags (comma, space, semicolon)"
+                                            splitChars={[',', ' ', ';']}
+                                            {...tagsInputProps}
+                                            error={
+                                                Object.keys(form.errors)
+                                                    .filter((key) => key.startsWith('tags.'))
+                                                    .map((key) => form.errors[key])
+                                                    .join(', ') || tagsInputProps.error
+                                            }
+                                            onChange={handleTagsChange}
+                                            renderPill={({ value, onRemove }) => (
+                                                <TagInputPill onRemove={onRemove} value={value} />
+                                            )}
                                         />
 
                                         <MultiSelect
@@ -523,6 +490,12 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     </>
                                                 )
                                             }}
+                                            renderPill={({ option, onRemove }) => (
+                                                <TagInputPill
+                                                    onRemove={onRemove}
+                                                    value={option.label}
+                                                />
+                                            )}
                                             searchable
                                             {...form.getInputProps('nodes')}
                                         />
@@ -560,6 +533,12 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     />
                                                 )
                                             }}
+                                            renderPill={({ option, onRemove }) => (
+                                                <TagInputPill
+                                                    onRemove={onRemove}
+                                                    value={option.label}
+                                                />
+                                            )}
                                             searchable
                                             {...form.getInputProps('excludedInternalSquads')}
                                         />
@@ -788,19 +767,16 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     w="40%"
                                                 />
 
-                                                <Select
+                                                <Autocomplete
                                                     clearable
-                                                    data={Object.values(FINGERPRINTS).map(
-                                                        (fingerprint) => ({
-                                                            label: fingerprint,
-                                                            value: fingerprint
-                                                        })
-                                                    )}
+                                                    clearSectionMode="both"
+                                                    data={FINGERPRINTS}
                                                     key={form.key('fingerprint')}
                                                     label={t('base-host-form.fingerprint')}
                                                     placeholder={t(
                                                         'base-host-form.fingerprint-e-g-chrome'
                                                     )}
+                                                    rightSection={<PiCaretDown size={16} />}
                                                     {...form.getInputProps('fingerprint')}
                                                     w="55%"
                                                 />
@@ -820,7 +796,21 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                 hideControls
                                                 max={65535}
                                                 min={0}
-                                                rightSection={vlessRouteHoverCard()}
+                                                rightSection={
+                                                    <ActionIcon
+                                                        color="gray"
+                                                        onClick={() => {
+                                                            window.open(
+                                                                'https://xtls.github.io/config/routing.html',
+                                                                '_blank'
+                                                            )
+                                                        }}
+                                                        size="xs"
+                                                        variant="subtle"
+                                                    >
+                                                        <HiQuestionMarkCircle size={20} />
+                                                    </ActionIcon>
+                                                }
                                             />
                                         </Stack>
                                     </SectionCard.Section>
@@ -935,7 +925,26 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                 color="gray"
                                                 disabled={isXhttpExtraButtonDisabled()}
                                                 leftSection={<PiPencilDuotone />}
-                                                onClick={open}
+                                                onClick={() => {
+                                                    modals.open({
+                                                        modalId: XHTTP_MODAL_ID,
+                                                        fullScreen: isMobile,
+                                                        title: (
+                                                            <BaseOverlayHeader
+                                                                iconColor="teal"
+                                                                IconComponent={PiPencilDuotone}
+                                                                iconVariant="soft"
+                                                                title={t(
+                                                                    'base-host-form.xhttp-extra-params'
+                                                                )}
+                                                            />
+                                                        ),
+                                                        centered: true,
+                                                        size: 'lg',
+                                                        withCloseButton: true,
+                                                        children: <XhttpModalContent form={form} />
+                                                    })
+                                                }}
                                                 variant="soft"
                                             >
                                                 xHTTP
@@ -944,7 +953,24 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                             <Button
                                                 color="gray"
                                                 leftSection={<TbCloudNetwork />}
-                                                onClick={openMuxParams}
+                                                onClick={() => {
+                                                    modals.open({
+                                                        modalId: MUX_MODAL_ID,
+                                                        fullScreen: isMobile,
+                                                        title: (
+                                                            <BaseOverlayHeader
+                                                                iconColor="teal"
+                                                                IconComponent={TbCloudNetwork}
+                                                                iconVariant="soft"
+                                                                title="MUX"
+                                                            />
+                                                        ),
+                                                        centered: true,
+                                                        size: 'lg',
+                                                        withCloseButton: true,
+                                                        children: <MuxModalContent form={form} />
+                                                    })
+                                                }}
                                                 variant="soft"
                                             >
                                                 Mux
@@ -953,7 +979,26 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                             <Button
                                                 color="gray"
                                                 leftSection={<PiNetwork />}
-                                                onClick={openSockoptParams}
+                                                onClick={() => {
+                                                    modals.open({
+                                                        modalId: SOCKOPT_MODAL_ID,
+                                                        fullScreen: isMobile,
+                                                        title: (
+                                                            <BaseOverlayHeader
+                                                                iconColor="teal"
+                                                                IconComponent={PiNetwork}
+                                                                iconVariant="soft"
+                                                                title="SockOpt"
+                                                            />
+                                                        ),
+                                                        centered: true,
+                                                        size: 'lg',
+                                                        withCloseButton: true,
+                                                        children: (
+                                                            <SockoptModalContent form={form} />
+                                                        )
+                                                    })
+                                                }}
                                                 variant="soft"
                                             >
                                                 SockOpt
@@ -962,7 +1007,26 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                             <Button
                                                 color="gray"
                                                 leftSection={<TbMask />}
-                                                onClick={openFinalMask}
+                                                onClick={() => {
+                                                    modals.open({
+                                                        modalId: FINAL_MASK_MODAL_ID,
+                                                        fullScreen: isMobile,
+                                                        title: (
+                                                            <BaseOverlayHeader
+                                                                iconColor="teal"
+                                                                IconComponent={TbMask}
+                                                                iconVariant="soft"
+                                                                title="Final Mask"
+                                                            />
+                                                        ),
+                                                        centered: true,
+                                                        size: 'lg',
+                                                        withCloseButton: true,
+                                                        children: (
+                                                            <FinalMaskModalContent form={form} />
+                                                        )
+                                                    })
+                                                }}
                                                 variant="soft"
                                             >
                                                 Final Mask
@@ -1048,6 +1112,56 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                 {...form.getInputProps('serverDescription')}
                                             />
 
+                                            <TextInput
+                                                key={form.key('pinnedPeerCertSha256')}
+                                                label={
+                                                    <Group gap={4} justify="flex-start">
+                                                        <Text fw={600} size="sm">
+                                                            Pinned Peer Cert SHA256
+                                                        </Text>
+                                                        <ActionIcon
+                                                            color="gray"
+                                                            onClick={() => {
+                                                                window.open(
+                                                                    'https://xtls.github.io/ru/config/transports/tls.html#tlsobject',
+                                                                    '_blank'
+                                                                )
+                                                            }}
+                                                            size="xs"
+                                                            variant="subtle"
+                                                        >
+                                                            <HiQuestionMarkCircle size={20} />
+                                                        </ActionIcon>
+                                                    </Group>
+                                                }
+                                                {...form.getInputProps('pinnedPeerCertSha256')}
+                                            />
+
+                                            <TextInput
+                                                key={form.key('verifyPeerCertByName')}
+                                                label={
+                                                    <Group gap={4} justify="flex-start">
+                                                        <Text fw={600} size="sm">
+                                                            Verify Peer Cert By Name
+                                                        </Text>
+                                                        <ActionIcon
+                                                            color="gray"
+                                                            onClick={() => {
+                                                                window.open(
+                                                                    'https://xtls.github.io/ru/config/transports/tls.html#tlsobject',
+                                                                    '_blank'
+                                                                )
+                                                            }}
+                                                            size="xs"
+                                                            variant="subtle"
+                                                        >
+                                                            <HiQuestionMarkCircle size={20} />
+                                                        </ActionIcon>
+                                                    </Group>
+                                                }
+                                                {...form.getInputProps('verifyPeerCertByName')}
+                                            />
+
                                             <Group gap="xs" justify="space-between">
                                                 <Group gap={4}>
                                                     <Text fw={600} size="sm">
@@ -1060,22 +1174,6 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     key={form.key('shuffleHost')}
                                                     size="md"
                                                     {...form.getInputProps('shuffleHost', {
-                                                        type: 'checkbox'
-                                                    })}
-                                                />
-                                            </Group>
-
-                                            <Group gap="xs" justify="space-between">
-                                                <Group gap={4}>
-                                                    <Text fw={600} size="sm">
-                                                        {t('base-host-form.allow-insecure')}
-                                                    </Text>
-                                                </Group>
-                                                <Switch
-                                                    color="teal.8"
-                                                    key={form.key('allowInsecure')}
-                                                    size="md"
-                                                    {...form.getInputProps('allowInsecure', {
                                                         type: 'checkbox'
                                                     })}
                                                 />
@@ -1101,7 +1199,19 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     <Text fw={600} size="sm">
                                                         {t('base-host-form.enable-x25519mlkem768')}
                                                     </Text>
-                                                    {mihomoX25519HoverCard()}
+                                                    <ActionIcon
+                                                        color="gray"
+                                                        onClick={() => {
+                                                            window.open(
+                                                                'https://wiki.metacubex.one/en/config/proxies/tls/#reality-optssupport-x25519mlkem768',
+                                                                '_blank'
+                                                            )
+                                                        }}
+                                                        size="xs"
+                                                        variant="subtle"
+                                                    >
+                                                        <HiQuestionMarkCircle size={20} />
+                                                    </ActionIcon>
                                                 </Group>
                                                 <Switch
                                                     color="teal.8"
@@ -1112,6 +1222,38 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                                                     })}
                                                 />
                                             </Group>
+
+                                            <Select
+                                                clearable
+                                                data={Object.values(MIHOMO_IP_VERSION).map(
+                                                    (ipVersion) => ({
+                                                        label: ipVersion,
+                                                        value: ipVersion
+                                                    })
+                                                )}
+                                                key={form.key('mihomoIpVersion')}
+                                                label={
+                                                    <Group gap={4} justify="flex-start">
+                                                        <Text fw={600} size="sm">
+                                                            Mihomo IP Version
+                                                        </Text>
+                                                        <ActionIcon
+                                                            color="gray"
+                                                            onClick={() => {
+                                                                window.open(
+                                                                    'https://wiki.metacubex.one/ru/config/proxies/#ip-version',
+                                                                    '_blank'
+                                                                )
+                                                            }}
+                                                            size="xs"
+                                                            variant="subtle"
+                                                        >
+                                                            <HiQuestionMarkCircle size={20} />
+                                                        </ActionIcon>
+                                                    </Group>
+                                                }
+                                                {...form.getInputProps('mihomoIpVersion')}
+                                            />
                                         </Stack>
                                     </SectionCard.Section>
                                 </SectionCard.Root>
@@ -1126,7 +1268,7 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                     <Group gap="xs">
                         <Button
                             color="teal"
-                            disabled={!form.isValid() || !form.isDirty() || !form.isTouched()}
+                            disabled={!form.isValid() || !form.isDirty()}
                             leftSection={<PiFloppyDiskDuotone size="16px" />}
                             loading={isSubmitting}
                             size="md"
@@ -1136,193 +1278,9 @@ export const BaseHostForm = <T extends CreateHostCommand.Request | UpdateHostCom
                         </Button>
                     </Group>
 
-                    <Group>
-                        {handleCloneHost && (
-                            <Tooltip label={t('base-host-form.clone')}>
-                                <ActionIcon
-                                    color="blue"
-                                    loading={isSubmitting}
-                                    onClick={handleCloneHost}
-                                    size="xl"
-                                    variant="light"
-                                >
-                                    <PiCopyDuotone size="24px" />
-                                </ActionIcon>
-                            </Tooltip>
-                        )}
-                        <DeleteHostFeature />
-                    </Group>
+                    {!!hostUuid && <DeleteHostFeature hostUuid={hostUuid} />}
                 </Group>
             </DrawerFooter>
-
-            <Drawer
-                onClose={close}
-                opened={opened}
-                overlayProps={{ backgroundOpacity: 0.6, blur: 0 }}
-                padding="lg"
-                position="right"
-                size="lg"
-                title={
-                    <BaseOverlayHeader
-                        iconColor="teal"
-                        IconComponent={PiPencilDuotone}
-                        iconVariant="soft"
-                        title={t('base-host-form.xhttp-extra-params')}
-                    />
-                }
-            >
-                <Stack gap="md">
-                    <Text size="sm">{t('base-host-form.extra-xhttp-description')}</Text>
-                    <JsonInput
-                        autosize
-                        formatOnBlur
-                        key={form.key('xHttpExtraParams')}
-                        minRows={15}
-                        placeholder={BASIC_XHTTP_EXTRA_PARAMS}
-                        validationError={t('base-host-form.invalid-json')}
-                        {...form.getInputProps('xHttpExtraParams')}
-                    />
-
-                    <Button
-                        color="gray"
-                        leftSection={<PiArrowUpDuotone size={px('1.2rem')} />}
-                        onClick={() => {
-                            // @ts-expect-error -- TODO: fix this
-                            form.setFieldValue('xHttpExtraParams', PASTE_BASIC_XHTTP_EXTRA_PARAMS)
-                        }}
-                        variant="light"
-                    >
-                        {t('base-host-form.fill-with-sample-xhttp-extra-params')}
-                    </Button>
-
-                    <Button onClick={close}>{t('common.close')}</Button>
-                </Stack>
-            </Drawer>
-
-            <Drawer
-                onClose={closeMuxParams}
-                opened={muxParamsOpened}
-                padding="lg"
-                position="right"
-                size="lg"
-                title={
-                    <BaseOverlayHeader
-                        iconColor="teal"
-                        IconComponent={TbCloudNetwork}
-                        iconVariant="soft"
-                        title="MUX"
-                    />
-                }
-            >
-                <Stack gap="md">
-                    <Stack gap={0}>
-                        <Text size="sm">
-                            {t('base-host-form.this-will-only-be-used-for-xray-json-output')}
-                        </Text>
-                        <Text size="sm">
-                            {t('base-host-form.please-ensure-you-provide-a-valid-json-mux-object')}
-                        </Text>
-                        <Text size="sm">
-                            {t('base-host-form.for-more-information-refer-to')}{' '}
-                            <Link
-                                target="_blank"
-                                to="https://xtls.github.io/ru/config/outbound.html#muxobject"
-                            >
-                                {t('base-host-form.xtls-documentation')}
-                            </Link>
-                            .
-                        </Text>
-                    </Stack>
-                    <JsonInput
-                        autosize
-                        formatOnBlur
-                        key={form.key('muxParams')}
-                        minRows={15}
-                        placeholder={BASIC_MUX_PARAMS}
-                        validationError={t('base-host-form.invalid-json')}
-                        {...form.getInputProps('muxParams')}
-                    />
-
-                    <Button
-                        color="gray"
-                        leftSection={<PiArrowUpDuotone size={px('1.2rem')} />}
-                        onClick={() => {
-                            // @ts-expect-error -- TODO: fix this
-                            form.setFieldValue('muxParams', BASIC_MUX_PARAMS)
-                        }}
-                        variant="light"
-                    >
-                        {t('base-host-form.paste-default-mux-params')}
-                    </Button>
-
-                    <Button onClick={closeMuxParams}>{t('common.close')}</Button>
-                </Stack>
-            </Drawer>
-
-            <Drawer
-                onClose={closeSockoptParams}
-                opened={sockoptParamsOpened}
-                padding="lg"
-                position="right"
-                size="lg"
-                title={
-                    <BaseOverlayHeader
-                        iconColor="teal"
-                        IconComponent={PiNetwork}
-                        iconVariant="soft"
-                        title="SockOpt"
-                    />
-                }
-            >
-                <Stack gap="md">
-                    <Stack gap={0}>
-                        <Text size="sm">
-                            {t('base-host-form.this-will-only-be-used-for-xray-json-output')}
-                        </Text>
-                        <Text size="sm">
-                            {t(
-                                'base-host-form.please-ensure-you-provide-a-valid-json-sockopt-object'
-                            )}
-                        </Text>
-                        <Text size="sm">
-                            {t('base-host-form.for-more-information-refer-to')}{' '}
-                            <Link
-                                target="_blank"
-                                to="https://xtls.github.io/ru/config/transports/sockopt.html"
-                            >
-                                {t('base-host-form.xtls-documentation')}
-                            </Link>
-                            .
-                        </Text>
-                    </Stack>
-
-                    <JsonInput
-                        autosize
-                        formatOnBlur
-                        key={form.key('sockoptParams')}
-                        minRows={15}
-                        placeholder={BASIC_SOCKOPT_PARAMS}
-                        validationError={t('base-host-form.invalid-json')}
-                        {...form.getInputProps('sockoptParams')}
-                    />
-
-                    <Button
-                        color="gray"
-                        leftSection={<PiArrowUpDuotone size={px('1.2rem')} />}
-                        onClick={() => {
-                            // @ts-expect-error -- TODO: fix this
-                            form.setFieldValue('sockoptParams', BASIC_SOCKOPT_PARAMS)
-                        }}
-                        variant="light"
-                    >
-                        {t('base-host-form.paste-default-sockopt-params')}
-                    </Button>
-
-                    <Button onClick={closeSockoptParams}>{t('common.close')}</Button>
-                </Stack>
-            </Drawer>
-
-            <FinalMaskDrawer close={closeFinalMask} form={form} opened={finalMaskOpened} />
         </form>
     )
 }

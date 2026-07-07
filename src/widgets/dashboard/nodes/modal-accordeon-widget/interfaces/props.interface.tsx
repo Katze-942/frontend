@@ -1,5 +1,5 @@
-import { GetOneNodeCommand } from '@remnawave/backend-contract'
+import { GetNodeCommand } from '@remnawave/backend-contract'
 
 export interface IProps {
-    node: GetOneNodeCommand.Response['response']
+    node: GetNodeCommand.Response['response']
 }

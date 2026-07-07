@@ -1,16 +1,15 @@
 import { ActionIcon, Alert, Button, Card, Group, Stack, TextInput } from '@mantine/core'
+import { useForm, schemaResolver } from '@mantine/form'
 import { UpdateSubscriptionSettingsCommand } from '@remnawave/backend-contract'
-import { PiChatsCircle, PiInfo, PiPlus, PiTrash } from 'react-icons/pi'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { zodResolver } from 'mantine-form-zod-resolver'
 import { useTranslation } from 'react-i18next'
-import { useForm } from '@mantine/form'
+import { PiChatsCircle, PiInfo, PiPlus, PiTrash } from 'react-icons/pi'
 
-import { TemplateInfoPopoverShared } from '@shared/ui/popovers/template-info-popover/template-info-popover.shared'
+import { queryClient } from '@shared/api'
 import { QueryKeys, useUpdateSubscriptionSettings } from '@shared/api/hooks'
+import { TemplateInfoPopoverShared } from '@shared/ui/popovers/template-info-popover/template-info-popover.shared'
 import { SettingsCardShared } from '@shared/ui/settings-card'
 import { handleFormErrors } from '@shared/utils/misc'
-import { queryClient } from '@shared/api'
 
 interface HeaderItem {
     key: string
@@ -36,10 +35,10 @@ export const SubscriptionResponseHeadersCardWidget = (props: IProps) => {
 
     const [localHeaders, setLocalHeaders] = useState<HeaderItem[]>(headers)
 
-    const form = useForm<UpdateSubscriptionSettingsCommand.Request>({
+    const form = useForm<UpdateSubscriptionSettingsCommand.RequestBody>({
         name: 'subscription-user-remarks-card-form',
         mode: 'uncontrolled',
-        validate: zodResolver(UpdateSubscriptionSettingsCommand.RequestSchema),
+        validate: schemaResolver(UpdateSubscriptionSettingsCommand.RequestBodySchema),
         initialValues: {
             uuid: subscriptionSettings.uuid,
             profileTitle: subscriptionSettings.profileTitle,

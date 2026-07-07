@@ -1,158 +1,158 @@
 name: Release frontend dev
 
 on:
-    push:
-        branches:
-            - dev
-            - my-fork
-    workflow_dispatch:
-        inputs:
-            release_tag:
-                description: Release tag that stores remnawave-frontend.zip
-                required: false
-                default: dev-build
+  push:
+    branches:
+      - dev
+      - my-fork
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag that stores remnawave-frontend.zip
+        required: false
+        default: dev-build
 
 permissions:
-    contents: write
+  contents: write
 
 env:
-    DEV_RELEASE_TAG: dev-build
-    TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-    TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  DEV_RELEASE_TAG: dev-build
+  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
 jobs:
-    send-start-deploy-telegram-message:
-        name: Send Telegram message
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout source code
-              uses: actions/checkout@v2
+  send-start-deploy-telegram-message:
+    name: Send Telegram message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-            - name: Send Telegram message
-              if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-              uses: proDreams/actions-telegram-notifier@main
-              with:
-                  token: ${{ env.TELEGRAM_TOKEN }}
-                  chat_id: ${{ env.TELEGRAM_CHAT_ID }}
-                  thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
-                  status: info
-                  notify_fields: 'repository,branch,commit,workflow'
-                  title: 'Build frontend:${{ github.ref_name }} build started'
+      - name: Send Telegram message
+        if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        uses: proDreams/actions-telegram-notifier@main
+        with:
+          token: ${{ env.TELEGRAM_TOKEN }}
+          chat_id: ${{ env.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          status: info
+          notify_fields: 'repository,branch,commit,workflow'
+          title: 'Build frontend:${{ github.ref_name }} build started'
 
-    build-and-release:
-        name: Build and release
-        runs-on: ubuntu-22.04
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
+  build-and-release:
+    name: Build and release
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-            - name: Setup Node
-              uses: actions/setup-node@v3
-              with:
-                  node-version: '22.18.0'
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.18.0'
 
-            - name: Install dependencies
-              run: |
-                  npm ci
+      - name: Install dependencies
+        run: |
+          npm ci
 
-            - name: Prepare release metadata
-              id: release
-              env:
-                  INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-              run: |
-                  RELEASE_TAG="${INPUT_RELEASE_TAG:-$DEV_RELEASE_TAG}"
-                  echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Prepare release metadata
+        id: release
+        env:
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          RELEASE_TAG="${INPUT_RELEASE_TAG:-$DEV_RELEASE_TAG}"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
-            - name: Upload sources
-              env:
-                  CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
-                  CROWDIN_API_TOKEN: ${{ secrets.CROWDIN_API_TOKEN }}
-              run: |
-                  if [ -z "$CROWDIN_PROJECT_ID" ] || [ -z "$CROWDIN_API_TOKEN" ]; then
-                      echo "Crowdin secrets are not configured; skipping upload."
-                      exit 0
-                  fi
+      - name: Upload sources
+        env:
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_API_TOKEN: ${{ secrets.CROWDIN_API_TOKEN }}
+        run: |
+          if [ -z "$CROWDIN_PROJECT_ID" ] || [ -z "$CROWDIN_API_TOKEN" ]; then
+            echo "Crowdin secrets are not configured; skipping upload."
+            exit 0
+          fi
 
-                  npm run crowdin:upload
+          npm run crowdin:upload
 
-            - name: Build
-              run: |
-                  npm run start:build
+      - name: Build
+        run: |
+          npm run start:build
 
-            - name: Create ZIP archive of /dist
-              run: |
-                  zip -r remnawave-frontend.zip ./dist
+      - name: Create ZIP archive of /dist
+        run: |
+          zip -r remnawave-frontend.zip ./dist
 
-            - name: Ensure release exists
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1 || \
-                      gh release create "${{ steps.release.outputs.tag }}" \
-                          --title "${{ steps.release.outputs.tag }}" \
-                          --notes "Development build" \
-                          --target "$GITHUB_SHA" \
-                          --prerelease
+      - name: Ensure release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1 || \
+            gh release create "${{ steps.release.outputs.tag }}" \
+              --title "${{ steps.release.outputs.tag }}" \
+              --notes "Development build" \
+              --target "$GITHUB_SHA" \
+              --prerelease
 
-            - name: Remove previous ZIP from release (if exists)
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  gh release delete-asset "${{ steps.release.outputs.tag }}" remnawave-frontend.zip || true
+      - name: Remove previous ZIP from release (if exists)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete-asset "${{ steps.release.outputs.tag }}" remnawave-frontend.zip || true
 
-            - name: Upload new ZIP to release
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  gh release upload "${{ steps.release.outputs.tag }}" remnawave-frontend.zip --clobber
+      - name: Upload new ZIP to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.release.outputs.tag }}" remnawave-frontend.zip --clobber
 
-            - name: Update release notes
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
-                  DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+      - name: Update release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
 
-                  gh release edit "${{ steps.release.outputs.tag }}" --target "$GITHUB_SHA" --notes-file - <<EOF
-                  🔄 Updated development build
-                  🔗 [Commit]($COMMIT_URL)  
-                  📅 Built: $DATE
-                  EOF
+          gh release edit "${{ steps.release.outputs.tag }}" --target "$GITHUB_SHA" --notes-file - <<EOF
+          🔄 Updated development build
+          🔗 [Commit]($COMMIT_URL)  
+          📅 Built: $DATE
+          EOF
 
-    send-telegram-message:
-        name: Send Telegram message
-        needs: [build-and-release]
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout source code
-              uses: actions/checkout@v2
+  send-telegram-message:
+    name: Send Telegram message
+    needs: [build-and-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-            - name: Send Telegram message
-              if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-              uses: proDreams/actions-telegram-notifier@main
-              with:
-                  token: ${{ env.TELEGRAM_TOKEN }}
-                  chat_id: ${{ env.TELEGRAM_CHAT_ID }}
-                  thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
-                  status: success
-                  notify_fields: 'repository,branch,commit,workflow'
-                  title: 'Build frontend:${{ github.ref_name }} build finished'
+      - name: Send Telegram message
+        if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        uses: proDreams/actions-telegram-notifier@main
+        with:
+          token: ${{ env.TELEGRAM_TOKEN }}
+          chat_id: ${{ env.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          status: success
+          notify_fields: 'repository,branch,commit,workflow'
+          title: 'Build frontend:${{ github.ref_name }} build finished'
 
-    notify-on-error:
-        runs-on: ubuntu-latest
-        needs: [build-and-release]
-        if: failure()
-        steps:
-            - name: Checkout source code
-              uses: actions/checkout@v2
+  notify-on-error:
+    runs-on: ubuntu-latest
+    needs: [build-and-release]
+    if: failure()
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-            - name: Send Telegram message
-              if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-              uses: proDreams/actions-telegram-notifier@main
-              with:
-                  token: ${{ env.TELEGRAM_TOKEN }}
-                  chat_id: ${{ env.TELEGRAM_CHAT_ID }}
-                  thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
-                  status: error
-                  notify_fields: 'repository,branch,commit,workflow'
-                  title: 'Build frontend:${{ github.ref_name }} build failed'
+      - name: Send Telegram message
+        if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        uses: proDreams/actions-telegram-notifier@main
+        with:
+          token: ${{ env.TELEGRAM_TOKEN }}
+          chat_id: ${{ env.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          status: error
+          notify_fields: 'repository,branch,commit,workflow'
+          title: 'Build frontend:${{ github.ref_name }} build failed'

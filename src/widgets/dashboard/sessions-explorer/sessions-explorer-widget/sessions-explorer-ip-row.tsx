@@ -1,13 +1,13 @@
-import { TbClockCheck, TbClockExclamation, TbClockPause, TbExternalLink } from 'react-icons/tb'
-import { ActionIcon, Box, Group, Stack, Text, Tooltip } from '@mantine/core'
-import { useTranslation } from 'react-i18next'
-import { memo } from 'react'
-import clsx from 'clsx'
-
-import { formatRelativeDateUtil, formatTimeUtil } from '@shared/utils/time-utils'
-import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
-
 import type { AggregatedUserNode } from './use-sessions-explorer'
+
+import { ActionIcon, Box, Group, Stack, Text, Tooltip } from '@mantine/core'
+import clsx from 'clsx'
+import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { TbClockCheck, TbClockExclamation, TbClockPause, TbExternalLink } from 'react-icons/tb'
+
+import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
+import { formatRelativeDateUtil, formatTimeUtil } from '@shared/utils/time-utils'
 
 import styles from './sessions-explorer.module.css'
 

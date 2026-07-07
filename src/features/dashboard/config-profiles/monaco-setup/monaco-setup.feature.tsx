@@ -1,16 +1,15 @@
+import { Monaco } from '@monaco-editor/react'
 import {
     GetSnippetsCommand,
     ResponseRulesConfigSchema,
     TSubscriptionTemplateType
 } from '@remnawave/backend-contract'
-import zodToJsonSchema, { jsonDescription } from 'zod-to-json-schema'
 import { NodePluginSchema } from '@remnawave/node-plugins'
-import { Monaco } from '@monaco-editor/react'
-import consola from 'consola'
 import axios from 'axios'
+import consola from 'consola'
+import { app } from 'src/config'
 
 import { monacoTheme } from '@shared/constants/monaco-theme'
-import { app } from 'src/config'
 
 export const MonacoSetupFeature = {
     setup: async (
@@ -107,17 +106,17 @@ export const MonacoSetupSnippetsFeature = {
                 items: {
                     oneOf: [
                         {
-                            ...(schema.definitions?.OutboundObject || {}),
+                            ...schema.definitions?.OutboundObject,
                             title: 'Outbound Object',
                             description: 'Outbound configuration (for outbounds[])'
                         },
                         {
-                            ...(schema.definitions?.RuleObject || {}),
+                            ...schema.definitions?.RuleObject,
                             title: 'Rule Object',
                             description: 'Routing rule (for routing.rules[])'
                         },
                         {
-                            ...(schema.definitions?.BalancerObject || {}),
+                            ...schema.definitions?.BalancerObject,
                             title: 'Balancer Object',
                             description: 'Balancer configuration (for routing.balancers[])'
                         }
@@ -155,11 +154,8 @@ export const MonacoSetupResponseRulesFeature = {
         groupedTemplates: Record<TSubscriptionTemplateType, string[]>
     ) => {
         try {
-            const schema = zodToJsonSchema(ResponseRulesConfigSchema, {
-                name: 'Response Rules Config Schema',
-                applyRegexFlags: true,
-                errorMessages: true,
-                postProcess: jsonDescription
+            const schema = ResponseRulesConfigSchema.toJSONSchema({
+                target: 'draft-07'
             })
 
             const templateOptions = {
@@ -171,24 +167,27 @@ export const MonacoSetupResponseRulesFeature = {
                 ...groupedTemplates
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const schemaDefinitions = (schema as any).definitions?.['Response Rules Config Schema']
-            const rulesItems = schemaDefinitions?.properties?.rules?.items
+            const rules = schema.properties?.rules
+            const rulesItems =
+                typeof rules === 'object' &&
+                typeof rules.items === 'object' &&
+                !Array.isArray(rules.items)
+                    ? rules.items
+                    : undefined
 
             if (rulesItems) {
-                if (!rulesItems.allOf) {
-                    rulesItems.allOf = []
-                }
+                const rulesAllOf = (rulesItems.allOf ??= [])
 
                 Object.entries(templateOptions).forEach(([responseType, templates]) => {
                     if (templates.length > 0) {
-                        rulesItems.allOf.push({
+                        rulesAllOf.push({
                             if: {
                                 properties: {
                                     responseType: { const: responseType }
                                 },
                                 required: ['responseType']
                             },
+                            // oxlint-disable-next-line
                             then: {
                                 properties: {
                                     responseModifications: {
@@ -206,13 +205,14 @@ export const MonacoSetupResponseRulesFeature = {
                             }
                         })
                     } else {
-                        rulesItems.allOf.push({
+                        rulesAllOf.push({
                             if: {
                                 properties: {
                                     responseType: { const: responseType }
                                 },
                                 required: ['responseType']
                             },
+                            // oxlint-disable-next-line
                             then: {
                                 properties: {
                                     responseModifications: {
@@ -229,26 +229,6 @@ export const MonacoSetupResponseRulesFeature = {
                         })
                     }
                 })
-                //     } else {
-                //         rulesItems.allOf.push({
-                //             if: {
-                //                 properties: {
-                //                     responseType: { const: responseType }
-                //                 },
-                //                 required: ['responseType']
-                //             },
-                //             then: {
-                //                 properties: {
-                //                     responseModifications: {
-                //                         properties: {
-                //                             overrideSubscriptionTemplateWith: false
-                //                         }
-                //                     }
-                //                 }
-                //             }
-                //         })
-                //     }
-                // })
             }
 
             monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
@@ -292,12 +272,7 @@ export const MonacoSetupResponseRulesFeature = {
 export const MonacoSetupNodePluginEditorFeature = {
     setup: async (monaco: Monaco) => {
         try {
-            const schema = zodToJsonSchema(NodePluginSchema, {
-                name: 'Node Plugin Schema',
-                applyRegexFlags: true,
-                errorMessages: true,
-                postProcess: jsonDescription
-            })
+            const schema = NodePluginSchema.toJSONSchema()
 
             monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                 schemaValidation: 'error',

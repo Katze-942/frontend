@@ -1,12 +1,13 @@
+import { MRT_ColumnDef } from '@kastov/mantine-react-table-open'
 /* eslint-disable camelcase */
 import { GetSubscriptionRequestHistoryCommand } from '@remnawave/backend-contract'
-import { MRT_ColumnDef } from '@kastov/mantine-react-table-open'
-import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
-import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
+
+import { formatTimeUtil } from '@shared/utils/time-utils'
 
 export const useSrhInspectorTableColumns = () => {
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
 
     return useMemo<
         MRT_ColumnDef<
@@ -35,12 +36,17 @@ export const useSrhInspectorTableColumns = () => {
                 accessorKey: 'requestAt',
                 header: t('use-srh-inspector-table-columns.request-at'),
                 accessorFn: (originalRow) =>
-                    dayjs(originalRow.requestAt).format('DD/MM/YYYY, HH:mm'),
+                    formatTimeUtil({
+                        time: originalRow.requestAt,
+                        template: 'TIME_FIRST_DATETIME',
+                        language: i18n.language
+                    }),
                 minSize: 250,
                 enableColumnFilterModes: false,
                 enableColumnFilter: false,
                 mantineTableBodyCellProps: {
-                    align: 'center'
+                    align: 'left',
+                    ff: 'monospace'
                 }
             },
             {
@@ -50,6 +56,6 @@ export const useSrhInspectorTableColumns = () => {
                 size: 80
             }
         ],
-        [t]
+        [t, i18n.language]
     )
 }

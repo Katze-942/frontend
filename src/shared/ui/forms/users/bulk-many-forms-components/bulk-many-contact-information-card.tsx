@@ -1,9 +1,9 @@
-import { ForwardRefComponent, HTMLMotionProps, Variants } from 'motion/react'
-import { PiEnvelopeDuotone, PiTelegramLogoDuotone } from 'react-icons/pi'
-import { BulkUpdateUsersCommand } from '@remnawave/backend-contract'
 import { NumberInput, Stack, TextInput } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
+import { BulkUpdateUsersCommand } from '@remnawave/backend-contract'
+import { ForwardRefComponent, HTMLMotionProps, Variants } from 'motion/react'
 import { useTranslation } from 'react-i18next'
+import { PiEnvelopeDuotone, PiTelegramLogoDuotone } from 'react-icons/pi'
 import { TbMail } from 'react-icons/tb'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
@@ -11,7 +11,7 @@ import { SectionCard } from '@shared/ui/section-card'
 
 interface IProps {
     cardVariants: Variants
-    form: UseFormReturnType<BulkUpdateUsersCommand.Request>
+    form: UseFormReturnType<BulkUpdateUsersCommand.RequestBody>
     motionWrapper: ForwardRefComponent<HTMLDivElement, HTMLMotionProps<'div'>>
 }
 
