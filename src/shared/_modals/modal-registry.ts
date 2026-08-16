@@ -17,7 +17,11 @@ import {
     UpdateBillingDateModal,
     ViewInfraProviderModal
 } from './infra-billing'
-import { InternalSquadAccessibleNodesDrawer, InternalSquadsInboundsDrawer } from './internal-squads'
+import {
+    InternalSquadAccessibleNodesDrawer,
+    InternalSquadsInboundsDrawer,
+    InternalSquadsUsageDrawer
+} from './internal-squads'
 import { NodePluginExecutorDrawer } from './node-plugins'
 import {
     CreateNodeModal,
@@ -26,6 +30,7 @@ import {
     NodeActiveSessionsDrawer,
     NodesConfigProfilesDrawer,
     NodesUsageStatsModal,
+    NodeInboundsHostsDrawer,
     NodeUsageStatsDrawer
 } from './nodes'
 import { PasskeysDrawer } from './remnawave-settings'
@@ -76,9 +81,11 @@ export const MODAL_REGISTRY = {
     nodes_linkedHostsDrawer: LinkedHostsDrawer,
     nodes_nodeActiveSessionsDrawer: NodeActiveSessionsDrawer,
     nodes_nodesConfigProfilesDrawer: NodesConfigProfilesDrawer,
+    nodes_nodeInboundsHostsDrawer: NodeInboundsHostsDrawer,
 
     internalSquads_internalSquadsInboundsDrawer: InternalSquadsInboundsDrawer,
     internalSquads_internalSquadAccessibleNodesDrawer: InternalSquadAccessibleNodesDrawer,
+    internalSquads_internalSquadsUsageDrawer: InternalSquadsUsageDrawer,
 
     externalSquads_externalSquadsDrawer: ExternalSquadsDrawer,
 

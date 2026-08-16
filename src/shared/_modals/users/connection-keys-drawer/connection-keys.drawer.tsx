@@ -30,7 +30,7 @@ import {
 import { TbJson } from 'react-icons/tb'
 
 import { useNiceMantineModal } from '@shared/_modals/use-nice-modal'
-import { useGetConnectionKeysByUuid, useGetRawSubscription } from '@shared/api/hooks'
+import { useGetConnectionKeysByUserId, useGetRawSubscription } from '@shared/api/hooks'
 import { LoaderModalShared } from '@shared/ui/loader-modal'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { QrCodeBuilder } from '@shared/ui/qr-code-builder'
@@ -38,12 +38,12 @@ import { SectionCardRoot } from '@shared/ui/section-card/section-card.root'
 import { SectionCardSection } from '@shared/ui/section-card/section-card.section'
 
 interface IProps {
-    userUuid: string
+    userId: number
     shortUuid: string
 }
 
 export const ConnectionKeysDrawer = NiceModal.create((props: IProps) => {
-    const { userUuid, shortUuid } = props
+    const { userId, shortUuid } = props
     const { t } = useTranslation()
 
     const modal = useModal()
@@ -52,9 +52,9 @@ export const ConnectionKeysDrawer = NiceModal.create((props: IProps) => {
         drawer: true
     })
 
-    const { data: connectionKeys, isLoading } = useGetConnectionKeysByUuid({
+    const { data: connectionKeys, isLoading } = useGetConnectionKeysByUserId({
         route: {
-            uuid: userUuid
+            userId: userId
         }
     })
 

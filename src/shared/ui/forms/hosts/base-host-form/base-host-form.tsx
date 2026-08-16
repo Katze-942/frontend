@@ -490,10 +490,10 @@ export const BaseHostForm = <
                                                     </>
                                                 )
                                             }}
-                                            renderPill={({ option, onRemove }) => (
+                                            renderPill={({ option, value, onRemove }) => (
                                                 <TagInputPill
                                                     onRemove={onRemove}
-                                                    value={option.label}
+                                                    value={option?.label ?? value}
                                                 />
                                             )}
                                             searchable
@@ -533,10 +533,10 @@ export const BaseHostForm = <
                                                     />
                                                 )
                                             }}
-                                            renderPill={({ option, onRemove }) => (
+                                            renderPill={({ option, value, onRemove }) => (
                                                 <TagInputPill
                                                     onRemove={onRemove}
-                                                    value={option.label}
+                                                    value={option?.label ?? value}
                                                 />
                                             )}
                                             searchable
@@ -1268,7 +1268,7 @@ export const BaseHostForm = <
                     <Group gap="xs">
                         <Button
                             color="teal"
-                            disabled={!form.isValid() || !form.isDirty()}
+                            disabled={!form.isValid() || !form.isDirty() || !form.isTouched()}
                             leftSection={<PiFloppyDiskDuotone size="16px" />}
                             loading={isSubmitting}
                             size="md"

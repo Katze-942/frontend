@@ -36,45 +36,13 @@ export const LinkedHostsDrawer = NiceModal.create((props: IProps) => {
         [nodes]
     )
 
-    if (!nodeUuid || !hosts || !configProfiles) {
+    const renderLinkedHosts = () => {
+        if (!nodeUuid || !hosts || !configProfiles) return null
+
+        const linkedHosts = hosts.filter((host) => host.nodes.includes(nodeUuid))
+
         return (
-            <Drawer
-                {...modalProps}
-                padding="lg"
-                position="right"
-                size="500px"
-                title={
-                    <BaseOverlayHeader
-                        iconColor="teal"
-                        IconComponent={PiListChecks}
-                        iconVariant="soft"
-                        title={t('linked-hosts-drawer.widget.assigned-hosts')}
-                    />
-                }
-            >
-                <LoadingScreen />
-            </Drawer>
-        )
-    }
-
-    const linkedHosts = hosts.filter((host) => host.nodes.includes(nodeUuid))
-
-    return (
-        <Drawer
-            {...modalProps}
-            padding="lg"
-            position="right"
-            size="800px"
-            title={
-                <BaseOverlayHeader
-                    iconColor="teal"
-                    IconComponent={PiListChecks}
-                    iconVariant="soft"
-                    title={t('linked-hosts-drawer.widget.assigned-hosts')}
-                />
-            }
-        >
-            <Stack gap={0}>
+            <>
                 {linkedHosts.length === 0 && (
                     <SectionCard.Root p="xl">
                         <SectionCard.Section>
@@ -109,7 +77,30 @@ export const LinkedHostsDrawer = NiceModal.create((props: IProps) => {
                         />
                     )
                 })}
-            </Stack>
+            </>
+        )
+    }
+
+    return (
+        <Drawer
+            {...modalProps}
+            padding="lg"
+            position="right"
+            size="800px"
+            title={
+                <BaseOverlayHeader
+                    iconColor="teal"
+                    IconComponent={PiListChecks}
+                    iconVariant="soft"
+                    title={t('linked-hosts-drawer.widget.assigned-hosts')}
+                />
+            }
+        >
+            {!nodeUuid || !hosts || !configProfiles ? (
+                <LoadingScreen />
+            ) : (
+                <Stack gap={0}>{renderLinkedHosts()}</Stack>
+            )}
         </Drawer>
     )
 })

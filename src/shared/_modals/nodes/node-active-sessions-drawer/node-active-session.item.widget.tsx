@@ -11,7 +11,6 @@ import {
 } from 'react-icons/tb'
 
 import { showModal } from '@shared/_modals/show-modal'
-import { useResolveUser } from '@shared/api/hooks'
 import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { SectionCard } from '@shared/ui/section-card'
@@ -36,20 +35,10 @@ export const NodeActiveSessionItem = (props: IProps) => {
 
     const { t, i18n } = useTranslation()
 
-    const { mutateAsync: resolveUser, isPending: isLoading } = useResolveUser()
-
-    const handleViewUser = async () => {
-        const result = await resolveUser({
-            variables: {
-                id: Number(user.userId)
-            }
+    const handleViewUser = () => {
+        showModal('users_viewUserModal', {
+            userId: user.userId
         })
-
-        if (result.uuid) {
-            showModal('users_viewUserModal', {
-                userUuid: result.uuid
-            })
-        }
     }
 
     return (
@@ -62,7 +51,6 @@ export const NodeActiveSessionItem = (props: IProps) => {
                             <Tooltip label={t('node-active-session.item.widget.view-user')}>
                                 <ActionIcon
                                     color="cyan"
-                                    loading={isLoading}
                                     onClick={handleViewUser}
                                     size="lg"
                                     variant="soft"
@@ -74,7 +62,7 @@ export const NodeActiveSessionItem = (props: IProps) => {
                         iconColor="blue"
                         IconComponent={TbId}
                         iconVariant="soft"
-                        title={user.userId}
+                        title={user.userId.toString()}
                     />
 
                     <Group gap="xs">

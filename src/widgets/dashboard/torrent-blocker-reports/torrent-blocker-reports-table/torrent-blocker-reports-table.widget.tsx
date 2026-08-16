@@ -159,7 +159,7 @@ export function TorrentBlockerReportsTableWidget() {
             <ActionIconGroup>
                 <ActionIcon
                     onClick={async () => {
-                        showModal('users_viewUserModal', { userUuid: row.original.user.uuid })
+                        showModal('users_viewUserModal', { userId: row.original.userId })
                     }}
                     size="input-sm"
                     variant="soft"

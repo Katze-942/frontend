@@ -12,11 +12,11 @@ import { ResultsWidget } from './results.widget'
 import { useUserActiveSessions } from './use-user-active-sessions'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const UserActiveSessionDrawer = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
 
     const modal = useModal()
@@ -26,7 +26,7 @@ export const UserActiveSessionDrawer = NiceModal.create((props: IProps) => {
     })
 
     const { dropAll, dropIp, dropNode, isCompleted, isFailed, nodes, progress, refresh } =
-        useUserActiveSessions(userUuid)
+        useUserActiveSessions(userId)
 
     const renderContent = () => {
         if (isFailed) return <FailedStateWidget onDropAll={dropAll} onRefresh={refresh} />

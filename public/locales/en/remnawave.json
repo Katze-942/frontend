@@ -28,7 +28,8 @@
     "remnawave-settings": "Remnawave Settings",
     "node-plugins": "Plugins",
     "tb-reports": "Torrent Blocker Reports",
-    "sessions-explorer": "Sessions Explorer"
+    "sessions-explorer": "Sessions Explorer",
+    "http-stats": "HTTP Stats"
   },
   "common": {
     "delete": "Delete",
@@ -598,36 +599,16 @@
   "subscription-settings": {
     "widget": {
       "validation-error": "Validation error",
+      "main-settings": "Main settings",
       "you-must-add-at-least-one-remark-with-text": "You must add at least one remark with text",
-      "subscription-info": "Subscription info",
-      "this-title-will-be-displayed-as-subscription-name": "This title will be displayed as the subscription name.",
-      "profile-title": "Profile title",
-      "enter-profile-title": "Enter profile title",
-      "auto-update-description": "Some client applications follow this interval to auto-update the subscription.",
-      "auto-update-interval-hours": "Auto-update interval (hours)",
-      "support-link-description": "Some clients will display this link in the subscription information. The link should lead the user to the support page.",
-      "support-link": "Support link",
-      "happ-settings": "Happ settings",
-      "happ-announce-description": "200 characters maximum. Will be displayed under the subscription name in Happ.",
-      "happ-announce": "Happ Announce",
-      "enter-happ-announce-max-200-characters": "Enter Happ Announce, max. 200 characters",
-      "happ-routing-description": "Happ routing is a feature that allows you to configure the routing rules that Xray-Core will use through the subscription link.",
-      "happ-routing-description-line-2": "A routing link for Happ can be obtained through Remnawave's Happ Routing Builder. The button below will redirect you to the aforementioned page.",
-      "configure-happ-routing": "Happ Routing Builder",
-      "happ-routing": "Happ routing",
       "user-status-remarks-description": "The following values will be displayed in the subscription page if the user is expired, limited or disabled.",
       "user-status-remarks-description-line-2": "You can add multiple remarks for each status.",
       "user-status-remarks-description-line-3": "Because expired, limited and disabled users are not able to connect to the server, they will see these remarks in the client instead of receiving an empty subscription.",
       "update-settings": "Update settings",
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "profile-webpage-url": "Profile Webpage URL",
-      "profile-webpage-url-description": "Used by some clients. Enabled by default, domain obtained from SUB_PUBLIC_DOMAIN .env variable.",
       "serve-json-at-base-subscription": "Serve JSON at base subscription",
       "serve-json-description": "Serve JSON configurations at the base subscription path (without having to append /json). If the client supports it, it will be served JSON, otherwise it will be served as usual.",
-      "subscription-info-description": "Subscription links are supported by many client apps such as Happ, v2RayNG, Streisand, etc.",
-      "happ-description-line-1": "Here you can configure settings specific to Happ.",
-      "happ-description-line-2": "These settings will only apply to subscription links that are imported in Happ.",
       "custom-remarks": "Custom remarks"
     },
     "page": {
@@ -892,6 +873,26 @@
       "users-hidden-with-less-than-100-kb": "{{usersCount}} users hidden with less than 100 KiB ({{totalTraffic}} total)"
     }
   },
+  "internal-squads-usage-drawer": {
+    "info": {
+      "title": "How usage is calculated",
+      "summary": "Returns internal squad members who spent at least the given threshold over the selected period, with the <b>total volume</b> for each of them.",
+      "nodes-title": "Which nodes are counted",
+      "nodes-intro": "A squad isn't tied to nodes directly – the link is derived through inbounds:",
+      "nodes-step-1": "All inbounds that belong to the internal squad are taken.",
+      "nodes-step-2": "For each inbound, the config profiles it belongs to are resolved.",
+      "nodes-step-3": "A node is counted when it has such a profile set as <b>active</b> and that inbound is enabled on the node itself.",
+      "nodes-outro": "So only the nodes a squad member can <hl>actually connect to right now</hl> are counted. If the squad has no inbound available on at least one node, the list is empty.",
+      "traffic-title": "How traffic is counted",
+      "traffic-granularity": "Stats are stored with <b>daily</b> granularity: one record = user + node + day. Node data is flushed to the database roughly <hl>every 2 minutes</hl>, so today's numbers are near real-time, lagging by up to a couple of minutes.",
+      "traffic-sum": "For each member, all of their daily per-node records are summed over the period from the start of <code>start</code> to the end of <code>end</code> (both dates inclusive, UTC).",
+      "traffic-threshold": "Only users whose total is <b>≥ minTotalBytes</b> make it into the response. Volume is returned in <hl>raw bytes</hl>, without rounding.",
+      "caveats-title": "What to keep in mind",
+      "caveats-per-node": "Traffic is counted <b>per whole node</b>, not per inbound. If a node is shared across squads (its active profile also serves other inbounds), the user's total includes all their traffic on that node – including what they poured through other squads' inbounds. It's an <hl>upper bound</hl>, not exact per-squad attribution.",
+      "caveats-membership": "Squad membership and the node set are taken <b>at request time</b>, not historically. A user who left the squad disappears from the response (even though they used traffic); a recently joined one shows all their traffic for the period, including days before joining. The same goes for a change of a node's active profile.",
+      "caveats-sorting": "The list is sorted by <b>user ID</b>, not by volume. Since traffic changes in real time, data may drift between pages – to hunt down abusers set a <code>minTotalBytes</code> threshold instead of reading everyone."
+    }
+  },
   "get-hwid-user-devices": {
     "feature": {
       "no-devices-found": "No devices found",
@@ -1153,7 +1154,6 @@
     "modal": {
       "widget": {
         "loading-accessible-nodes": "Loading accessible nodes...",
-        "no-accessible-nodes-found-for-this-user": "No accessible nodes found for this user",
         "access-summary": "Access Summary",
         "user-accessible-nodes": "User Accessible Nodes"
       }
@@ -1433,7 +1433,9 @@
     "request-ip": "Request IP",
     "user-agent": "User Agent",
     "request-at": "Request At",
-    "user-uuid": "User UUID"
+    "user-uuid": "User UUID",
+    "response-type": "Response Type",
+    "rule-name": "Rule Name"
   },
   "srh-inspector-table": {
     "widget": {
@@ -1474,11 +1476,8 @@
         "edit-snippet": "Edit Snippet",
         "snippets": "Snippets",
         "new-snippet": "New snippet",
-        "snippets-help-line-1": "They are used to predefine some of your configurations.",
-        "snippets-help-line-2": "A snippet must contain an array of Outbound or Rule objects, and at least one item is required.",
-        "snippets-help-line-3": "Autocomplete is available for snippet names. Also, you can quickly preview the snippet by hovering over the name in the editor.",
-        "snippets-help-line-4": "Inside outbounds[], you can reference the snippets by name.",
-        "snippets-help-line-5": "Inside routing.rules[], you can reference the snippets by name."
+        "sync-nodes-description": "Nodes still run the previous configuration. Restart affected nodes now to apply the change?",
+        "sync-nodes-cancel": "Not now"
       }
     }
   },
@@ -1722,7 +1721,13 @@
   },
   "external-squads-response-headers": {
     "widget": {
-      "response-headers": "Headers"
+      "response-headers": "Headers",
+      "headers-inherited-description": "By default, response headers are inherited from the main subscription settings.",
+      "add-headers": "Add headers",
+      "add-headers-description": "Headers listed here are added to the inherited ones. If a header with the same key already exists in the main settings, it will be overridden.",
+      "remove-headers": "Remove headers",
+      "remove-headers-description": "Header keys listed here will be removed from the response, even if they are provided by the main settings.",
+      "enter-header-key": "Enter header key"
     }
   },
   "subscription-hwid-settings": {
@@ -1771,6 +1776,7 @@
     "online": "Online",
     "name": "Name",
     "address": "Address",
+    "ip-addresses": "IP addresses",
     "traffic-used": "Traffic Used",
     "config-profile": "Config Profile",
     "inbounds": "Inbounds",
@@ -2194,6 +2200,28 @@
       "note": "Note"
     }
   },
+  "node-ips": {
+    "title": "IP addresses",
+    "add-ip": "Add IP",
+    "status": "Status",
+    "remove-ip": "Remove IP",
+    "invalid-ip": "Not a valid IPv4 or IPv6 address",
+    "ip-is-required": "IP address is required",
+    "max-ips-reached": "Maximum {{max}} IP addresses",
+    "no-ips-yet": "No IP addresses yet"
+  },
+  "node-ip-statuses": {
+    "inbound": "Inbound",
+    "outbound": "Outbound",
+    "management": "Management",
+    "transit": "Transit",
+    "monitoring": "Monitoring",
+    "reserve": "Reserve",
+    "blocked": "Blocked",
+    "flagged": "Flagged",
+    "deprecated": "Deprecated",
+    "unknown": "Unknown"
+  },
   "node-consumption": {
     "card": {
       "node-consumption-multiplier-1": "Applies selected multiplier to Node traffic (1.0 = normal, 0.5 = half, 2.0 = double).",
@@ -2221,6 +2249,33 @@
       "backend-tools-description": "Access to Queue Viewer, Scalar or Swagger.",
       "login": "Login",
       "backend-tools": "Backend tools"
+    }
+  },
+  "http-stats": {
+    "page": {
+      "component": {
+        "http-stats-description": "Aggregated request counts per API route since the last panel restart."
+      }
+    }
+  },
+  "http-stats-table": {
+    "widget": {
+      "total-requests": "Total Requests",
+      "tracked-routes": "Tracked Routes",
+      "peak-requests": "Peak Requests",
+      "avg-route": "Avg / Route"
+    }
+  },
+  "get-node-inbounds-hosts": {
+    "feature": {
+      "inbounds-and-hosts": "Inbounds & hosts"
+    }
+  },
+  "node-inbounds-hosts-drawer": {
+    "widget": {
+      "inbounds-and-hosts": "Inbounds & hosts",
+      "no-active-config-profile": "This node has no active config profile",
+      "linked": "Linked"
     }
   }
 }

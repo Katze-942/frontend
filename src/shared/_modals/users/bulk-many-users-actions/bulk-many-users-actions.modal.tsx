@@ -68,7 +68,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
     const { mutate: extendExpirationDate, isPending: isExtendExpirationDatePending } =
         useBulkExtendUsersExpirationDate()
 
-    const uuids = actions.getUuids()
+    const userIds = actions.getIds()
 
     const form = useForm({
         name: 'change-active-internal-squads-form',
@@ -119,7 +119,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
                             modals.closeAll()
                             extendExpirationDate({
                                 variables: {
-                                    uuids,
+                                    userIds,
                                     extendDays: userInput
                                 }
                             })
@@ -180,7 +180,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
                     isLoading={isResetPending}
                     onClick={() =>
                         resetTraffic({
-                            variables: { uuids }
+                            variables: { userIds }
                         })
                     }
                     title={t('bulk-all-user-actions-tabs.actions.tab.feature.reset-traffic')}
@@ -196,7 +196,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
                     isLoading={isRevokePending}
                     onClick={() =>
                         revokeUsersSubscription({
-                            variables: { uuids }
+                            variables: { userIds }
                         })
                     }
                     title={t('bulk-user-actions.actions.tab.feature.revoke-subscription')}
@@ -212,7 +212,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
                     isLoading={isDeletePending}
                     onClick={() =>
                         deleteUsers({
-                            variables: { uuids }
+                            variables: { userIds }
                         })
                     }
                     title={t('bulk-user-actions.danger.tab.feature.delete-users')}
@@ -266,7 +266,7 @@ export const BulkManyUsersActionsModal = NiceModal.create((props: IProps) => {
                             onClick={() => {
                                 setActiveInternalSquads({
                                     variables: {
-                                        uuids,
+                                        userIds,
                                         activeInternalSquads: form.getValues().activeInternalSquads
                                     }
                                 })

@@ -7,10 +7,12 @@ import { hideModal } from '@shared/_modals/show-modal'
 import { QueryKeys, useDeleteUser } from '@shared/api/hooks'
 import { queryClient } from '@shared/api/query-client'
 
-import { IProps } from './interfaces'
+interface IProps {
+    userId: number
+}
 
 export function DeleteUserFeature(props: IProps) {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
 
     const { mutate: deleteUser, isPending: isDeleteUserPending } = useDeleteUser({
@@ -34,7 +36,7 @@ export function DeleteUserFeature(props: IProps) {
     const handleDeleteUser = () => {
         deleteUser({
             route: {
-                uuid: userUuid
+                userId: userId
             }
         })
     }

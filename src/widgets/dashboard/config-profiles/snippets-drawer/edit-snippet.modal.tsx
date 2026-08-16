@@ -11,11 +11,12 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { queryClient } from '@shared/api'
-import { useUpdateSnippet } from '@shared/api/hooks'
+import { useSyncSnippet, useUpdateSnippet } from '@shared/api/hooks'
 import { QueryKeys } from '@shared/api/hooks/keys-factory'
 import { monacoTheme } from '@shared/constants/monaco-theme'
 import { CopyableFieldShared } from '@shared/ui/copyable-field/copyable-field'
 import {
+    type BrowserDraft,
     createBrowserDraftHash,
     getEditSnippetDraftKey,
     readBrowserDraft,
@@ -23,6 +24,7 @@ import {
     writeBrowserDraft
 } from '@shared/utils/browser-draft-storage'
 
+import { openConfirmSnippetSyncModal } from './confirm-snippet-sync.modal'
 import classes from './SnippetsDrawer.module.css'
 
 export const EDIT_SNIPPET_MODAL_ID = 'edit-snippet-modal'
@@ -39,7 +41,9 @@ export const EditSnippetModal = (props: IProps) => {
     const monaco = useMonaco()
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
     const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const pendingDraftRef = useRef<BrowserDraft | null>(null)
     const isDraftCheckedRef = useRef(false)
+    const skippedDraftValueRef = useRef<null | string>(null)
     const draftKey = getEditSnippetDraftKey(snippet.name)
     const originalSnippetValue = JSON.stringify(snippet.snippet || [], null, 2)
 
@@ -52,6 +56,8 @@ export const EditSnippetModal = (props: IProps) => {
             }
         }
     })
+
+    const { mutate: syncSnippet } = useSyncSnippet()
 
     const editSnippetForm = useForm<UpdateSnippetCommand.RequestBody>({
         name: 'edit-snippet-form',
@@ -74,23 +80,39 @@ export const EditSnippetModal = (props: IProps) => {
     const saveDraftNow = (value: string) => {
         clearDraftAutosaveTimeout()
 
-        writeBrowserDraft(draftKey, {
+        const draft = {
             baseHash: createBrowserDraftHash(originalSnippetValue),
             updatedAt: Date.now(),
             value
-        })
+        }
+
+        pendingDraftRef.current = null
+        writeBrowserDraft(draftKey, draft)
     }
 
     const scheduleDraftSave = (value: string) => {
         clearDraftAutosaveTimeout()
 
+        pendingDraftRef.current = {
+            baseHash: createBrowserDraftHash(originalSnippetValue),
+            updatedAt: Date.now(),
+            value
+        }
+
         draftAutosaveTimeoutRef.current = setTimeout(() => {
-            saveDraftNow(value)
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+            draftAutosaveTimeoutRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft(draftKey, pendingDraft)
+            }
         }, 1000)
     }
 
     const clearDraft = () => {
         clearDraftAutosaveTimeout()
+        pendingDraftRef.current = null
         removeBrowserDraft(draftKey)
     }
 
@@ -150,6 +172,7 @@ export const EditSnippetModal = (props: IProps) => {
                 variant: 'light'
             },
             onConfirm: () => {
+                skippedDraftValueRef.current = draft.value
                 editorRef.current?.setValue(draft.value)
                 validateSnippetValue(draft.value)
             },
@@ -160,6 +183,13 @@ export const EditSnippetModal = (props: IProps) => {
     useEffect(() => {
         return () => {
             clearDraftAutosaveTimeout()
+
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft(draftKey, pendingDraft)
+            }
         }
     }, [])
 
@@ -201,12 +231,25 @@ export const EditSnippetModal = (props: IProps) => {
             return
         }
 
-        updateSnippet({
-            variables: {
-                name: values.name,
-                snippet: currentValue
+        updateSnippet(
+            {
+                variables: {
+                    name: values.name,
+                    snippet: currentValue
+                }
+            },
+            {
+                onSuccess: () => {
+                    openConfirmSnippetSyncModal(() => {
+                        syncSnippet({
+                            variables: {
+                                name: values.name
+                            }
+                        })
+                    })
+                }
             }
-        })
+        )
     }
 
     useEffect(() => {
@@ -241,7 +284,13 @@ export const EditSnippetModal = (props: IProps) => {
                         onChange={(value) => {
                             const nextValue = value ?? ''
 
-                            scheduleDraftSave(nextValue)
+                            if (skippedDraftValueRef.current === nextValue) {
+                                skippedDraftValueRef.current = null
+                            } else {
+                                skippedDraftValueRef.current = null
+                                scheduleDraftSave(nextValue)
+                            }
+
                             validateSnippetValue(nextValue)
                         }}
                         onMount={(editor) => {

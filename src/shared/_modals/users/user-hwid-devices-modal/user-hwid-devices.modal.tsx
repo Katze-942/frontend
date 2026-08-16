@@ -10,11 +10,11 @@ import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { UserHwidDevicesContentModal } from './user-hwid-devices.content.modal'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const UserHwidDevicesModal = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
     const isMobile = useIsMobile()
 
@@ -43,7 +43,7 @@ export const UserHwidDevicesModal = NiceModal.create((props: IProps) => {
                 />
             }
         >
-            <UserHwidDevicesContentModal userUuid={userUuid} mobile={isMobile} />
+            <UserHwidDevicesContentModal userId={userId} mobile={isMobile} />
         </Modal>
     )
 })

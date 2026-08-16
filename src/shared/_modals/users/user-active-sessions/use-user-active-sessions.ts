@@ -13,7 +13,7 @@ export type ActiveSessionNode = NonNullable<
     ConnectionsByUserResultCommand.Response['response']['result']
 >['nodes'][number]
 
-export const useUserActiveSessions = (userUuid: string) => {
+export const useUserActiveSessions = (userId: number) => {
     const { t } = useTranslation()
 
     const [jobId, setJobId] = useState<null | string>(null)
@@ -22,7 +22,7 @@ export const useUserActiveSessions = (userUuid: string) => {
 
     const { mutate: connectionsByUser } = useConnectionsByUser({
         route: {
-            uuid: userUuid
+            userId: userId
         },
         mutationFns: {
             onSuccess: (data) => {
@@ -86,15 +86,15 @@ export const useUserActiveSessions = (userUuid: string) => {
             dropConnections({
                 variables: {
                     dropBy: {
-                        by: 'userUuids',
-                        userUuids: [userUuid]
+                        by: 'userIds',
+                        userIds: [userId]
                     },
                     targetNodes: {
                         target: 'allNodes'
                     }
                 }
             }),
-        [dropConnections, userUuid]
+        [dropConnections, userId]
     )
 
     const dropNode = useCallback(
@@ -102,8 +102,8 @@ export const useUserActiveSessions = (userUuid: string) => {
             dropConnections({
                 variables: {
                     dropBy: {
-                        by: 'userUuids',
-                        userUuids: [userUuid]
+                        by: 'userIds',
+                        userIds: [userId]
                     },
                     targetNodes: {
                         target: 'specificNodes',
@@ -111,7 +111,7 @@ export const useUserActiveSessions = (userUuid: string) => {
                     }
                 }
             }),
-        [dropConnections, userUuid]
+        [dropConnections, userId]
     )
 
     const dropIp = useCallback(

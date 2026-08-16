@@ -6,7 +6,7 @@ import { useForm, schemaResolver } from '@mantine/form'
 import { modals } from '@mantine/modals'
 import { Editor, Monaco, useMonaco } from '@monaco-editor/react'
 import { CreateSnippetCommand } from '@remnawave/backend-contract'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { queryClient } from '@shared/api'
@@ -14,6 +14,7 @@ import { QueryKeys } from '@shared/api/hooks/keys-factory'
 import { useCreateSnippet } from '@shared/api/hooks/snippets/snippets.mutation.hooks'
 import { monacoTheme } from '@shared/constants/monaco-theme'
 import {
+    type BrowserDraft,
     createBrowserDraftHash,
     getCreateSnippetDraftKey,
     readBrowserDraft,
@@ -31,10 +32,12 @@ export const CreateSnippetModal = () => {
     const monaco = useMonaco()
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
     const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const pendingDraftRef = useRef<BrowserDraft<{ name: string }> | null>(null)
     const isDraftCheckedRef = useRef(false)
+    const skippedDraftValueRef = useRef<null | string>(null)
     const draftKey = getCreateSnippetDraftKey()
     const emptySnippetValue = JSON.stringify([], null, 2)
-    const [snippetName, setSnippetName] = useState('')
+    const snippetNameRef = useRef('')
 
     const createSnippetForm = useForm<CreateSnippetCommand.RequestBody>({
         name: 'create-snippet-form',
@@ -63,24 +66,41 @@ export const CreateSnippetModal = () => {
     const saveDraftNow = (name: string, value: string) => {
         clearDraftAutosaveTimeout()
 
-        writeBrowserDraft<{ name: string }>(draftKey, {
+        const draft = {
             baseHash: createBrowserDraftHash(emptySnippetValue),
             meta: { name },
             updatedAt: Date.now(),
             value
-        })
+        }
+
+        pendingDraftRef.current = null
+        writeBrowserDraft<{ name: string }>(draftKey, draft)
     }
 
     const scheduleDraftSave = (name: string, value: string) => {
         clearDraftAutosaveTimeout()
 
+        pendingDraftRef.current = {
+            baseHash: createBrowserDraftHash(emptySnippetValue),
+            meta: { name },
+            updatedAt: Date.now(),
+            value
+        }
+
         draftAutosaveTimeoutRef.current = setTimeout(() => {
-            saveDraftNow(name, value)
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+            draftAutosaveTimeoutRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft<{ name: string }>(draftKey, pendingDraft)
+            }
         }, 1000)
     }
 
     const clearDraft = () => {
         clearDraftAutosaveTimeout()
+        pendingDraftRef.current = null
         removeBrowserDraft(draftKey)
     }
 
@@ -151,8 +171,9 @@ export const CreateSnippetModal = () => {
                 variant: 'light'
             },
             onConfirm: () => {
-                setSnippetName(draftName)
+                snippetNameRef.current = draftName
                 createSnippetForm.setFieldValue('name', draftName)
+                skippedDraftValueRef.current = draft.value
                 editorRef.current?.setValue(draft.value)
                 validateSnippetValue(draft.value)
             },
@@ -163,6 +184,13 @@ export const CreateSnippetModal = () => {
     useEffect(() => {
         return () => {
             clearDraftAutosaveTimeout()
+
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft<{ name: string }>(draftKey, pendingDraft)
+            }
         }
     }, [])
 
@@ -226,7 +254,7 @@ export const CreateSnippetModal = () => {
                     onChange={(event) => {
                         const nextName = event.currentTarget.value
 
-                        setSnippetName(nextName)
+                        snippetNameRef.current = nextName
                         createSnippetForm.setFieldValue('name', nextName)
                         scheduleDraftSave(
                             nextName,
@@ -253,7 +281,13 @@ export const CreateSnippetModal = () => {
                         onChange={(value) => {
                             const nextValue = value ?? ''
 
-                            scheduleDraftSave(snippetName, nextValue)
+                            if (skippedDraftValueRef.current === nextValue) {
+                                skippedDraftValueRef.current = null
+                            } else {
+                                skippedDraftValueRef.current = null
+                                scheduleDraftSave(snippetNameRef.current, nextValue)
+                            }
+
                             validateSnippetValue(nextValue)
                         }}
                         onMount={(editor) => {
@@ -336,7 +370,7 @@ export const CreateSnippetModal = () => {
                         disabled={isCreating}
                         onClick={() => {
                             createSnippetForm.reset()
-                            setSnippetName('')
+                            snippetNameRef.current = ''
                             clearDraft()
                             modals.close(CREATE_SNIPPET_MODAL_ID)
                         }}

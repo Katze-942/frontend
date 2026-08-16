@@ -1,4 +1,5 @@
 import { Button, Card, Code, Group, Stack, Text, ThemeIcon } from '@mantine/core'
+import { useOs } from '@mantine/hooks'
 import { BULLBOARD_ROOT, ROOT, SCALAR_ROOT, SWAGGER_ROOT } from '@remnawave/backend-contract'
 import { TFunction } from 'i18next'
 import { ReactNode, useState } from 'react'
@@ -48,6 +49,8 @@ const getBackendTools = (t: TFunction): BackendTool[] => [
 export const BackendToolsCardWidget = () => {
     const { t } = useTranslation()
 
+    const os = useOs()
+
     const backendTools = getBackendTools(t)
 
     const { mutateAsync: issueOtt } = useIssueOtt()
@@ -58,11 +61,13 @@ export const BackendToolsCardWidget = () => {
         setPendingTool(tool.key)
         try {
             const { ott } = await issueOtt({})
-            window.open(
-                `${getBackendDomain()}${tool.path}?ott=${encodeURIComponent(ott)}`,
-                '_blank',
-                'noopener,noreferrer'
-            )
+            const url = `${getBackendDomain()}${tool.path}?ott=${encodeURIComponent(ott)}`
+
+            if (os === 'ios') {
+                window.location.assign(url)
+            } else {
+                window.open(url, '_blank', 'noopener,noreferrer')
+            }
         } finally {
             setPendingTool(null)
         }

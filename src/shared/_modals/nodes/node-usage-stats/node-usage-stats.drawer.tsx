@@ -101,8 +101,8 @@ export const NodeUsageStatsDrawer = NiceModal.create((props: IProps) => {
         nprogress.start()
         try {
             const result = await resolveUser({ variables: { username: user.name } })
-            if (result.uuid) {
-                showModal('users_viewUserModal', { userUuid: result.uuid })
+            if (result.id) {
+                showModal('users_viewUserModal', { userId: result.id })
             }
         } finally {
             nprogress.complete()

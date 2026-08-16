@@ -2,8 +2,8 @@ import { MRT_RowSelectionState } from '@kastov/mantine-react-table-open'
 
 export interface IActions {
     actions: {
-        getUuidLength: () => number
-        getUuids: () => string[]
+        getIdsLength: () => number
+        getIds: () => number[]
         resetState: () => void
         setTableSelection: (
             tableSelectionOrUpdater:

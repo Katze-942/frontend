@@ -82,11 +82,11 @@ export function TorrentBlockerStatsWidget() {
                         color: user.color,
                         name: user.username,
                         total: user.total,
-                        uuid: user.uuid
+                        userId: user.userId
                     }))}
                     maxHeight={230}
                     onItemClick={(user) => {
-                        showModal('users_viewUserModal', { userUuid: user.uuid })
+                        showModal('users_viewUserModal', { userId: user.userId })
                     }}
                     wrapper={(children) => (
                         <SectionCard.Root>

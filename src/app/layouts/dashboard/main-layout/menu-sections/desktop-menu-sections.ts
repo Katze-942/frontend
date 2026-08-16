@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { HiChartPie, HiServer } from 'react-icons/hi'
 import { PiArrowsInCardinalFill, PiChartLine, PiListChecks, PiUsers } from 'react-icons/pi'
 import {
-    TbChartArcs,
+    TbApi,
     TbCirclesRelation,
     TbCreditCard,
     TbDeviceAnalytics,
@@ -101,13 +101,6 @@ export const useDesktopMenuSections = (): MenuItem[] => {
                     href: ROUTES.DASHBOARD.MANAGEMENT.NODES_METRICS,
                     icon: PiChartLine,
                     id: 'nodes-metrics'
-                },
-
-                {
-                    name: t('constants.nodes-bandwidth-table'),
-                    href: ROUTES.DASHBOARD.MANAGEMENT.NODES_BANDWIDTH_TABLE,
-                    icon: TbChartArcs,
-                    id: 'nodes-bandwidth-table'
                 }
             ]
         },
@@ -236,6 +229,12 @@ export const useDesktopMenuSections = (): MenuItem[] => {
                     href: ROUTES.DASHBOARD.TOOLS.SESSIONS_EXPLORER,
                     icon: TbRadar2,
                     id: 'sessions-explorer'
+                },
+                {
+                    name: t('constants.http-stats'),
+                    href: ROUTES.DASHBOARD.TOOLS.HTTP_STATS,
+                    icon: TbApi,
+                    id: 'http-stats'
                 }
             ]
         },

@@ -34,11 +34,11 @@ const TOP_NODES_LIMIT_OPTIONS = [
 const DEFAULT_TOP_NODES_LIMIT = 20
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const UserUsageModal = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t, i18n } = useTranslation()
     const defaultRange = getDefaultDateRange()
 
@@ -84,7 +84,7 @@ export const UserUsageModal = NiceModal.create((props: IProps) => {
         isRefetching
     } = useGetStatsUserUsage({
         route: {
-            uuid: userUuid
+            userId: userId
         },
         query: {
             start: queryRange.start,

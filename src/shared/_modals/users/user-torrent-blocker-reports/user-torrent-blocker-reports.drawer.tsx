@@ -26,11 +26,11 @@ import { UserTorrentBlockerReportItem } from './user-torrent-blocker-report-item
 import classes from './user-torrent-blocker-reports.module.css'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const UserTorrentBlockerReportsModal = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
 
     const modal = useModal()
@@ -50,12 +50,12 @@ export const UserTorrentBlockerReportsModal = NiceModal.create((props: IProps) =
             size: 1000,
             filters: [
                 {
-                    id: 'user.uuid',
-                    value: userUuid
+                    id: 'userId',
+                    value: userId
                 }
             ],
             filterModes: {
-                'user.uuid': 'equals'
+                userId: 'equals'
             }
         }
     })

@@ -18,7 +18,7 @@ import {
     useGetExternalSquads,
     useGetInternalSquads,
     useGetNodes,
-    useGetUserByUuid,
+    useGetUserById,
     useGetUserTags,
     usersQueryKeys,
     useUpdateUser
@@ -57,11 +57,11 @@ const cardVariants = {
 }
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const ViewUserModalContent = (props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
 
     const { t } = useTranslation()
 
@@ -91,9 +91,9 @@ export const ViewUserModalContent = (props: IProps) => {
         )
     })
 
-    const { data: user } = useGetUserByUuid({
+    const { data: user } = useGetUserById({
         route: {
-            uuid: userUuid
+            userId: userId
         }
     })
 
@@ -102,12 +102,12 @@ export const ViewUserModalContent = (props: IProps) => {
             onSuccess: (data) => {
                 queryClient.refetchQueries({
                     queryKey: usersQueryKeys.getUserAccessibleNodes({
-                        uuid: userUuid
+                        userId: userId
                     }).queryKey
                 })
                 queryClient.setQueryData(
-                    usersQueryKeys.getUserByUuid({
-                        uuid: userUuid
+                    usersQueryKeys.getUserById({
+                        userId: userId
                     }).queryKey,
                     data
                 )
@@ -127,7 +127,7 @@ export const ViewUserModalContent = (props: IProps) => {
             )
 
             form.initialize({
-                uuid: user.uuid,
+                id: user.id,
                 trafficLimitBytes: user.trafficLimitBytes,
                 trafficLimitStrategy: user.trafficLimitStrategy,
                 expireAt: user.expireAt,
@@ -147,7 +147,7 @@ export const ViewUserModalContent = (props: IProps) => {
 
         updateUser({
             variables: {
-                uuid: values.uuid,
+                id: values.id,
                 trafficLimitStrategy: touchedFields.trafficLimitStrategy
                     ? values.trafficLimitStrategy
                     : undefined,
@@ -297,13 +297,13 @@ export const ViewUserModalContent = (props: IProps) => {
 
                     <Menu.Dropdown>
                         <Menu.Label>{t('view-user-modal.widget.danger-zone')}</Menu.Label>
-                        <DeleteUserFeature userUuid={user.uuid} />
+                        <DeleteUserFeature userId={user.id} />
 
                         <Menu.Divider />
                         <Menu.Label>{t('view-user-modal.widget.management')}</Menu.Label>
                         <ToggleUserStatusButtonFeature user={user} />
-                        <ResetUsageUserFeature userUuid={user.uuid} />
-                        <RevokeSubscriptionUserFeature userUuid={user.uuid} />
+                        <ResetUsageUserFeature userId={user.id} />
+                        <RevokeSubscriptionUserFeature userId={user.id} />
                     </Menu.Dropdown>
                 </Menu>
 

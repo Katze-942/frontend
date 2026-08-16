@@ -88,7 +88,7 @@ export default defineConfig({
                         },
                         {
                             name: 'dnd',
-                            test: /node_modules[\\/]@dnd-kit[\\/](core|sortable|utilities)[\\/]/
+                            test: /node_modules[\\/]@dnd-kit[\\/](abstract|dom|helpers|react)[\\/]/
                         },
                         {
                             name: 'mantinetable',

@@ -10,11 +10,11 @@ import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { UserSubscriptionRequestsModalContent } from './user-subscription-requests.content.widget'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const UserSubscriptionRequestsModal = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
     const isMobile = useIsMobile()
 
@@ -26,7 +26,7 @@ export const UserSubscriptionRequestsModal = NiceModal.create((props: IProps) =>
     return (
         <Modal
             {...modalProps}
-            size="min(800pxs, 70vw)"
+            size="min(1000px, 70vw)"
             styles={{
                 body: {
                     height: 'calc(100% - 60px)',
@@ -45,7 +45,7 @@ export const UserSubscriptionRequestsModal = NiceModal.create((props: IProps) =>
                 />
             }
         >
-            <UserSubscriptionRequestsModalContent userUuid={userUuid} mobile={isMobile} />
+            <UserSubscriptionRequestsModalContent userId={userId} mobile={isMobile} />
         </Modal>
     )
 })

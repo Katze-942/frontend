@@ -1,5 +1,5 @@
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { OptimisticSortingPlugin } from '@dnd-kit/dom/sortable'
+import { useSortable } from '@dnd-kit/react/sortable'
 import {
     ActionIcon,
     Badge,
@@ -12,13 +12,16 @@ import {
     ThemeIcon,
     Tooltip
 } from '@mantine/core'
+import { modals } from '@mantine/modals'
 import {
     GetHostsCommand,
     GetNodesCommand,
-    GetConfigProfilesCommand
+    GetConfigProfilesCommand,
+    SUBSCRIPTION_TEMPLATE_TYPE
 } from '@remnawave/backend-contract'
 import cx from 'clsx'
 import ColorHash from 'color-hash'
+import { githubDarkTheme, JsonEditor } from 'json-edit-react'
 import { CSSProperties, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PiNetwork, PiProhibit, PiPulse } from 'react-icons/pi'
@@ -32,10 +35,13 @@ import {
     TbMask,
     TbStar
 } from 'react-icons/tb'
+import { generatePath } from 'react-router'
 
 import { showModal } from '@shared/_modals/show-modal'
+import { ROUTES } from '@shared/constants'
 import { useIsMobile } from '@shared/hooks'
 import { XrayLogo } from '@shared/ui/logos'
+import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { SingleRowOverflowList } from '@shared/ui/single-row-overflow-list'
 import { resolveCountryCode } from '@shared/utils/misc/resolve-country-code'
 
@@ -43,6 +49,7 @@ import classes from './HostCard.module.css'
 
 export interface IProps {
     configProfiles: GetConfigProfilesCommand.Response['response']['configProfiles'] | undefined
+    index?: number
     isDragOverlay?: boolean
     isSelected?: boolean
     item: GetHostsCommand.Response['response'][number]
@@ -57,6 +64,7 @@ export function HostCardWidget(props: IProps) {
         nodesByUuid,
         item,
         configProfiles,
+        index = 0,
         isSelected,
         onSelect,
         isDragOverlay = false,
@@ -78,14 +86,17 @@ export function HostCardWidget(props: IProps) {
         (inbound) => inbound.uuid === item.inbound.configProfileInboundUuid
     )?.tag
 
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    const sortable = useSortable({
         id: item.uuid,
-        disabled: isDragOverlay
+        index,
+        disabled: isDragOverlay || disableReordering || viewOnly,
+        plugins: (defaults) => defaults.filter((plugin) => plugin !== OptimisticSortingPlugin)
     })
 
+    const isDragging = !isDragOverlay && sortable.isDragging
+    const { ref, handleRef } = sortable
+
     const style: CSSProperties = {
-        transform: CSS.Transform.toString(transform),
-        transition,
         opacity: isDragging ? 0 : 1,
         zIndex: isDragging ? 1000 : 'auto',
         position: 'relative'
@@ -128,8 +139,8 @@ export function HostCardWidget(props: IProps) {
                     [classes.selectedItem]: isSelected,
                     [classes.danglingItem]: !configProfile?.uuid
                 })}
-                data-dnd-overlay={isDragOverlay}
-                ref={isDragOverlay ? undefined : setNodeRef}
+                data-drag-overlay={isDragOverlay}
+                ref={isDragOverlay ? undefined : ref}
                 style={style}
             >
                 <Stack gap="sm">
@@ -149,10 +160,9 @@ export function HostCardWidget(props: IProps) {
                                 />
                                 {!disableReordering && (
                                     <Box
-                                        {...(isDragOverlay ? {} : attributes)}
-                                        {...(isDragOverlay ? {} : listeners)}
                                         className={classes.mobileDragHandle}
                                         onClick={(e) => e.stopPropagation()}
+                                        ref={isDragOverlay ? undefined : handleRef}
                                     >
                                         <RiDraggable size={px('1.2rem')} />
                                     </Box>
@@ -302,8 +312,8 @@ export function HostCardWidget(props: IProps) {
                 [classes.selectedItem]: isSelected,
                 [classes.danglingItem]: !configProfile?.uuid
             })}
-            data-dnd-overlay={isDragOverlay}
-            ref={isDragOverlay ? undefined : setNodeRef}
+            data-drag-overlay={isDragOverlay}
+            ref={isDragOverlay ? undefined : ref}
             style={style}
         >
             <Group gap="md" w="100%" wrap="nowrap">
@@ -312,9 +322,8 @@ export function HostCardWidget(props: IProps) {
                         <Checkbox checked={isSelected} onChange={onSelect} size="md" />
                         {!disableReordering && (
                             <Box
-                                {...(isDragOverlay ? {} : attributes)}
-                                {...(isDragOverlay ? {} : listeners)}
                                 className={classes.dragHandle}
+                                ref={isDragOverlay ? undefined : handleRef}
                             >
                                 <RiDraggable color="white" size="24px" />
                             </Box>
@@ -401,43 +410,141 @@ export function HostCardWidget(props: IProps) {
                             )}
 
                             <Tooltip label={t('base-host-form.xray-json-template')}>
-                                <ThemeIcon
+                                <ActionIcon
                                     color={hasXrayJsonTemplate ? 'teal' : 'gray'}
                                     size={28}
+                                    onClick={(e) => {
+                                        if (!item.xrayJsonTemplateUuid) return
+                                        e.stopPropagation()
+                                        window.open(
+                                            generatePath(
+                                                ROUTES.DASHBOARD.TEMPLATES.TEMPLATE_EDITOR,
+                                                {
+                                                    type: SUBSCRIPTION_TEMPLATE_TYPE.XRAY_JSON,
+                                                    uuid: item.xrayJsonTemplateUuid
+                                                }
+                                            ),
+                                            '_blank'
+                                        )
+                                    }}
                                     variant="soft"
                                 >
                                     <XrayLogo size={16} />
-                                </ThemeIcon>
+                                </ActionIcon>
                             </Tooltip>
 
                             <Tooltip label="Mux">
-                                <ThemeIcon
+                                <ActionIcon
                                     color={hasMuxParams ? 'teal' : 'gray'}
                                     size={28}
                                     variant="soft"
+                                    onClick={(e) => {
+                                        if (!item.muxParams) return
+                                        e.stopPropagation()
+                                        modals.open({
+                                            children: (
+                                                <JsonEditor
+                                                    collapse={3}
+                                                    data={JSON.parse(
+                                                        JSON.stringify(item.muxParams)
+                                                    )}
+                                                    indent={2}
+                                                    maxWidth="100%"
+                                                    rootName=""
+                                                    theme={githubDarkTheme}
+                                                    viewOnly
+                                                />
+                                            ),
+                                            title: (
+                                                <BaseOverlayHeader
+                                                    iconColor="shaded-gray"
+                                                    IconComponent={TbCloudNetwork}
+                                                    iconVariant="soft"
+                                                    title="Mux Params"
+                                                />
+                                            ),
+                                            size: 'xl'
+                                        })
+                                    }}
                                 >
                                     <TbCloudNetwork size={16} />
-                                </ThemeIcon>
+                                </ActionIcon>
                             </Tooltip>
 
                             <Tooltip label="Final Mask">
-                                <ThemeIcon
+                                <ActionIcon
                                     color={hasFinalMask ? 'teal' : 'gray'}
                                     size={28}
                                     variant="soft"
+                                    onClick={(e) => {
+                                        if (!item.finalMask) return
+                                        e.stopPropagation()
+                                        modals.open({
+                                            children: (
+                                                <JsonEditor
+                                                    collapse={3}
+                                                    data={JSON.parse(
+                                                        JSON.stringify(item.finalMask)
+                                                    )}
+                                                    indent={2}
+                                                    maxWidth="100%"
+                                                    rootName=""
+                                                    theme={githubDarkTheme}
+                                                    viewOnly
+                                                />
+                                            ),
+                                            title: (
+                                                <BaseOverlayHeader
+                                                    iconColor="shaded-gray"
+                                                    IconComponent={TbMask}
+                                                    iconVariant="soft"
+                                                    title="Final Mask"
+                                                />
+                                            ),
+                                            size: 'xl'
+                                        })
+                                    }}
                                 >
                                     <TbMask size={16} />
-                                </ThemeIcon>
+                                </ActionIcon>
                             </Tooltip>
 
                             <Tooltip label="SockOpt">
-                                <ThemeIcon
+                                <ActionIcon
                                     color={hasSockoptParams ? 'teal' : 'gray'}
                                     size={28}
                                     variant="soft"
+                                    onClick={(e) => {
+                                        if (!item.sockoptParams) return
+                                        e.stopPropagation()
+                                        modals.open({
+                                            children: (
+                                                <JsonEditor
+                                                    collapse={3}
+                                                    data={JSON.parse(
+                                                        JSON.stringify(item.sockoptParams)
+                                                    )}
+                                                    indent={2}
+                                                    maxWidth="100%"
+                                                    rootName=""
+                                                    theme={githubDarkTheme}
+                                                    viewOnly
+                                                />
+                                            ),
+                                            title: (
+                                                <BaseOverlayHeader
+                                                    iconColor="shaded-gray"
+                                                    IconComponent={PiNetwork}
+                                                    iconVariant="soft"
+                                                    title="SockOpt Params"
+                                                />
+                                            ),
+                                            size: 'xl'
+                                        })
+                                    }}
                                 >
                                     <PiNetwork size={16} />
-                                </ThemeIcon>
+                                </ActionIcon>
                             </Tooltip>
                         </Group>
                     </Group>

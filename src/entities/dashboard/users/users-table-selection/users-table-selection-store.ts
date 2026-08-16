@@ -6,7 +6,7 @@ import { create } from '@shared/hocs/store-wrapper'
 import { IActions, IState } from './interfaces'
 
 const initialState: IState = {
-    uuids: [],
+    userIds: [],
     tableSelection: {}
 }
 
@@ -27,11 +27,11 @@ export const useUsersTableSelectionStore = create<IActions & IState>()(
                                 : tableSelectionOrUpdater
                     }))
                 },
-                getUuidLength: () => {
+                getIdsLength: () => {
                     return Object.keys(get().tableSelection).length
                 },
-                getUuids: (): string[] => {
-                    return Object.keys(get().tableSelection).map((uuid) => uuid)
+                getIds: (): number[] => {
+                    return Object.keys(get().tableSelection).map((id) => Number(id))
                 },
 
                 getInitialState: () => {

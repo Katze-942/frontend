@@ -14,7 +14,6 @@ export const ROUTES = {
             USERS: '/dashboard/management/users',
             HOSTS: '/dashboard/management/hosts',
             NODES: '/dashboard/management/nodes',
-            NODES_BANDWIDTH_TABLE: '/dashboard/management/bandwidth-table',
             NODES_STATS: '/dashboard/management/stats/nodes',
             NODES_METRICS: '/dashboard/management/metrics/nodes',
             SUBSCRIPTION_SETTINGS: '/dashboard/management/subscription-settings',
@@ -34,7 +33,8 @@ export const ROUTES = {
             HWID_INSPECTOR: '/dashboard/tools/hwid-inspector',
             SRH_INSPECTOR: '/dashboard/tools/srh-inspector',
             TORRENT_BLOCKER_REPORTS: '/dashboard/tools/torrent-blocker-reports',
-            SESSIONS_EXPLORER: '/dashboard/tools/sessions-explorer'
+            SESSIONS_EXPLORER: '/dashboard/tools/sessions-explorer',
+            HTTP_STATS: '/dashboard/tools/http-stats'
         },
         TEMPLATES: {
             ROOT: '/dashboard/templates',

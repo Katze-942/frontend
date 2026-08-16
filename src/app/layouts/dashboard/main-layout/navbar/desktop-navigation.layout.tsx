@@ -70,9 +70,7 @@ export const DesktopNavigation = () => {
                             className={clsx(classes.navItem, {
                                 [classes.navItemActive]: sectionActive
                             })}
-                            {...(firstSectionHref
-                                ? { component: Link, to: firstSectionHref }
-                                : {})}
+                            {...(firstSectionHref ? { component: Link, to: firstSectionHref } : {})}
                         >
                             <NavIcon icon={section.icon} />
                             <span>{section.header}</span>

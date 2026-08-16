@@ -8,7 +8,6 @@ import { TbFingerprint, TbId, TbServer, TbSum } from 'react-icons/tb'
 import { GroupedVirtuoso } from 'react-virtuoso'
 
 import { showModal } from '@shared/_modals/show-modal'
-import { useResolveUser } from '@shared/api/hooks'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { SectionCard } from '@shared/ui/section-card'
 
@@ -58,7 +57,6 @@ const virtuosoComponents = {
 export const SessionsExplorerCard = memo(
     ({ user, midThreshold, highThreshold, ipSearchQuery }: IProps) => {
         const { t } = useTranslation()
-        const { mutateAsync: resolveUser, isPending: isLoading } = useResolveUser()
 
         const { visibleNodes, groupCounts, flatIps } = useMemo(() => {
             const visible: AggregatedUserNode[] = []
@@ -75,15 +73,7 @@ export const SessionsExplorerCard = memo(
         }, [user.nodes])
 
         const handleViewUser = async () => {
-            const result = await resolveUser({
-                variables: {
-                    id: Number(user.userId)
-                }
-            })
-
-            if (result.uuid) {
-                showModal('users_viewUserModal', { userUuid: result.uuid })
-            }
+            showModal('users_viewUserModal', { userId: user.userId })
         }
 
         return (
@@ -96,7 +86,6 @@ export const SessionsExplorerCard = memo(
                                 <Tooltip label={t('node-active-session.item.widget.view-user')}>
                                     <ActionIcon
                                         color="cyan"
-                                        loading={isLoading}
                                         onClick={handleViewUser}
                                         size="lg"
                                         variant="soft"
@@ -107,7 +96,7 @@ export const SessionsExplorerCard = memo(
                             }
                             IconComponent={TbId}
                             iconVariant="soft"
-                            title={user.userId}
+                            title={user.userId.toString()}
                             titleOrder={5}
                             truncateTitle
                         />

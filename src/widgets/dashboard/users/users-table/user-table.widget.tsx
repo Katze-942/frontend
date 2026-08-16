@@ -93,16 +93,16 @@ export function UserTableWidget() {
         rQueryParams: {
             // enabled: bulkUsersActionsStoreActions.getUuidLength() === 0,
             refetchInterval:
-                usersTableSelectionStoreActions.getUuidLength() === 0 ? sToMs(25) : false
+                usersTableSelectionStoreActions.getIdsLength() === 0 ? sToMs(25) : false
         }
     })
 
     useEffect(() => {
         if (isLoading) return
-        const userUuid = searchParams.get(SEARCH_PARAMS.USER)
-        if (!userUuid) return
+        const userId = searchParams.get(SEARCH_PARAMS.USER)
+        if (!userId) return
 
-        showModal('users_viewUserModal', { userUuid })
+        showModal('users_viewUserModal', { userId: Number(userId) })
 
         setSearchParams(
             (prev) => {
@@ -264,7 +264,7 @@ export function UserTableWidget() {
         },
         mantineTableBodyRowProps: ({ row }) => ({
             onClick: async () => {
-                if (row.id === 'mrt-row-empty' || row.original.uuid === undefined) {
+                if (row.id === 'mrt-row-empty' || row.original.id === undefined) {
                     notifications.show({
                         title: 'Nice try!',
                         message: 'Nothing to show...',
@@ -273,7 +273,7 @@ export function UserTableWidget() {
                     return
                 }
 
-                showModal('users_viewUserModal', { userUuid: row.original.uuid })
+                showModal('users_viewUserModal', { userId: row.original.id })
 
                 // await userModalActions.setUserUuid(row.original.uuid)
                 // userModalActions.changeModalState(true)
@@ -283,7 +283,7 @@ export function UserTableWidget() {
             }
         }),
         onRowSelectionChange: usersTableSelectionStoreActions.setTableSelection,
-        getRowId: (originalRow) => originalRow.uuid
+        getRowId: (originalRow) => originalRow.id?.toString() ?? 'unknown'
     })
 
     return (

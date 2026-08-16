@@ -21,7 +21,7 @@ export interface AggregatedUser {
     nodes: AggregatedUserNode[]
     totalIps: number
     uniqueIps: number
-    userId: string
+    userId: number
 }
 
 export interface ExplorerStats {
@@ -97,11 +97,11 @@ interface NodeResult {
     countryCode: string
     nodeName: string
     nodeUuid: string
-    users: Array<{ ips: NodeIpEntry[]; userId: string }>
+    users: Array<{ ips: NodeIpEntry[]; userId: number }>
 }
 
 function aggregateResults(results: NodeResult[]) {
-    const userMap = new Map<string, AggregatedUser>()
+    const userMap = new Map<number, AggregatedUser>()
     const globalIpSet = new Set<string>()
     let totalIpCount = 0
 

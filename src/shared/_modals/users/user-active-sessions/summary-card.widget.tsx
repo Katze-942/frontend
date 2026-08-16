@@ -70,12 +70,7 @@ export const SummaryCardWidget = ({
                                 'user-active-session-drawer.widget.drop-all-user-connections-all-nodes'
                             )}
                         >
-                            <ActionIcon
-                                color="orange"
-                                onClick={onDropAll}
-                                size="lg"
-                                variant="soft"
-                            >
+                            <ActionIcon color="orange" onClick={onDropAll} size="lg" variant="soft">
                                 <TbUnlink size={20} />
                             </ActionIcon>
                         </Tooltip>

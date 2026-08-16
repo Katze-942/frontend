@@ -3,7 +3,6 @@ name: Release frontend dev
 on:
   push:
     branches:
-      - dev
       - my-fork
   workflow_dispatch:
     inputs:
@@ -13,7 +12,7 @@ on:
         default: dev-build
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   DEV_RELEASE_TAG: dev-build
@@ -26,11 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Send Telegram message
         if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-        uses: proDreams/actions-telegram-notifier@main
+        uses: proDreams/actions-telegram-notifier@a031dcd7087ef9fad3de9f67cd6ba116c5f9052b
         with:
           token: ${{ env.TELEGRAM_TOKEN }}
           chat_id: ${{ env.TELEGRAM_CHAT_ID }}
@@ -42,14 +41,16 @@ jobs:
   build-and-release:
     name: Build and release
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
-          node-version: '22.18.0'
+          node-version: '24.19.0'
 
       - name: Install dependencies
         run: |
@@ -125,11 +126,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Send Telegram message
         if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-        uses: proDreams/actions-telegram-notifier@main
+        uses: proDreams/actions-telegram-notifier@a031dcd7087ef9fad3de9f67cd6ba116c5f9052b
         with:
           token: ${{ env.TELEGRAM_TOKEN }}
           chat_id: ${{ env.TELEGRAM_CHAT_ID }}
@@ -144,11 +145,11 @@ jobs:
     if: failure()
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Send Telegram message
         if: ${{ env.TELEGRAM_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
-        uses: proDreams/actions-telegram-notifier@main
+        uses: proDreams/actions-telegram-notifier@a031dcd7087ef9fad3de9f67cd6ba116c5f9052b
         with:
           token: ${{ env.TELEGRAM_TOKEN }}
           chat_id: ${{ env.TELEGRAM_CHAT_ID }}

@@ -465,18 +465,6 @@ export const useUserTableColumns = (
                 }
             },
             {
-                accessorKey: 'uuid',
-                header: 'UUID',
-                accessorFn: (originalRow) => originalRow.uuid,
-                minSize: 400,
-                maxSize: 800,
-                enableColumnFilterModes: false,
-
-                mantineTableBodyCellProps: {
-                    align: 'center'
-                }
-            },
-            {
                 accessorKey: 'vlessUuid',
                 header: 'Vless UUID',
                 accessorFn: (originalRow) => originalRow.vlessUuid,

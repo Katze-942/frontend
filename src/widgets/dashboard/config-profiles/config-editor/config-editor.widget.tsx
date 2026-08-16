@@ -17,6 +17,7 @@ import { usePseudoFullscreen } from '@shared/hooks'
 import { FullscreenToggleButton, fullscreenClasses } from '@shared/ui/fullscreen-toggle-button'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import {
+    type BrowserDraft,
     createBrowserDraftHash,
     getConfigProfileDraftKey,
     readBrowserDraft,
@@ -43,6 +44,7 @@ export function ConfigEditorWidget(props: IProps) {
 
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
     const draftAutosaveTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
+    const pendingDraftRef = useRef<BrowserDraft | null>(null)
     const isDraftCheckedRef = useRef(false)
     const skippedDraftValueRef = useRef<null | string>(null)
     const wasWasmRestarting = useRef(false)
@@ -94,23 +96,39 @@ export function ConfigEditorWidget(props: IProps) {
     const saveDraftNow = (value: string) => {
         clearDraftAutosaveTimeout()
 
-        writeBrowserDraft(draftKey, {
+        const draft = {
             baseHash: createBrowserDraftHash(originalValue),
             updatedAt: Date.now(),
             value
-        })
+        }
+
+        pendingDraftRef.current = null
+        writeBrowserDraft(draftKey, draft)
     }
 
     const scheduleDraftSave = (value: string) => {
         clearDraftAutosaveTimeout()
 
+        pendingDraftRef.current = {
+            baseHash: createBrowserDraftHash(originalValue),
+            updatedAt: Date.now(),
+            value
+        }
+
         draftAutosaveTimeoutRef.current = setTimeout(() => {
-            saveDraftNow(value)
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+            draftAutosaveTimeoutRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft(draftKey, pendingDraft)
+            }
         }, 1000)
     }
 
     const clearDraft = () => {
         clearDraftAutosaveTimeout()
+        pendingDraftRef.current = null
         removeBrowserDraft(draftKey)
     }
 
@@ -172,6 +190,7 @@ export function ConfigEditorWidget(props: IProps) {
                 variant: 'light'
             },
             onConfirm: () => {
+                skipDraftSaveForValue(draft.value)
                 editorRef.current?.setValue(draft.value)
                 setHasUnsavedChanges(true)
                 validateConfig()
@@ -183,6 +202,13 @@ export function ConfigEditorWidget(props: IProps) {
     useEffect(() => {
         return () => {
             clearDraftAutosaveTimeout()
+
+            const pendingDraft = pendingDraftRef.current
+            pendingDraftRef.current = null
+
+            if (pendingDraft) {
+                writeBrowserDraft(draftKey, pendingDraft)
+            }
         }
     }, [])
 

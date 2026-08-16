@@ -13,7 +13,7 @@ import {
     Tooltip
 } from '@mantine/core'
 import { modals } from '@mantine/modals'
-import { GetUserByUuidCommand, USERS_STATUS } from '@remnawave/backend-contract'
+import { GetUserByIdCommand, USERS_STATUS } from '@remnawave/backend-contract'
 import { UserStatusBadge } from '@widgets/dashboard/users/user-status-badge'
 import dayjs from 'dayjs'
 import { githubDarkTheme, JsonEditor } from 'json-edit-react'
@@ -48,9 +48,9 @@ import { formatRelativeDateUtil, formatTimeUtil, getTimeAgoUtil } from '@shared/
 
 interface IProps {
     cardVariants: Variants
-    lastConnectedNode?: null | { countryCode: string; name: string }
+    lastConnectedNode?: null | { countryCode: string; name: string; uuid: string }
     motionWrapper: ForwardRefComponent<HTMLDivElement, HTMLMotionProps<'div'>>
-    user: GetUserByUuidCommand.Response['response']
+    user: GetUserByIdCommand.Response['response']
 }
 
 const statusIconColorMap = {
@@ -76,7 +76,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
     const MotionWrapper = motionWrapper
 
     const { data: metadata, isLoading: isMetadataLoading } = useGetUserMetadata({
-        route: { uuid: user.uuid }
+        route: { userId: user.id }
     })
 
     const statusIconColor = statusIconColorMap[user.status] ?? 'gray'
@@ -181,7 +181,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="teal"
                                     onClick={() => {
                                         showModal('users_connectionKeysDrawer', {
-                                            userUuid: user.uuid,
+                                            userId: user.id,
                                             shortUuid: user.shortUuid
                                         })
                                     }}
@@ -241,7 +241,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="cyan"
                                     onClick={() =>
                                         showModal('users_detailedUserInfoDrawer', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }
                                     size="lg"
@@ -256,7 +256,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="cyan"
                                     onClick={() => {
                                         showModal('users_userAccessibleNodesModal', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }}
                                     size="lg"
@@ -275,7 +275,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="indigo"
                                     onClick={() => {
                                         showModal('users_userUsageModal', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }}
                                     size="lg"
@@ -293,7 +293,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="indigo"
                                     onClick={() =>
                                         showModal('users_userTorrentBlockerReportsModal', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }
                                     size="lg"
@@ -312,7 +312,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="indigo"
                                     onClick={() =>
                                         showModal('users_userSubscriptionRequestsModal', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }
                                     size="lg"
@@ -327,7 +327,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="indigo"
                                     onClick={() => {
                                         showModal('users_userHwidDevicesModal', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }}
                                     size="lg"
@@ -342,7 +342,7 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                     color="indigo"
                                     onClick={() => {
                                         showModal('users_userActiveSessionDrawer', {
-                                            userUuid: user.uuid
+                                            userId: user.id
                                         })
                                     }}
                                     size="lg"
@@ -472,6 +472,12 @@ export const UserIdentificationCard = memo((props: IProps) => {
                                 bg="rgba(6, 182, 212, 0.08)"
                                 p="xs"
                                 radius="md"
+                                onClick={() => {
+                                    showModal('nodes_editNodeModal', {
+                                        nodeUuid: lastConnectedNode.uuid
+                                    })
+                                }}
+                                style={{ cursor: 'pointer' }}
                             >
                                 <Tooltip
                                     label={t(

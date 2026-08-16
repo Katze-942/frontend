@@ -77,7 +77,7 @@ export const BulkManyUsersUpdateModal = NiceModal.create((props: IProps) => {
         mode: 'uncontrolled',
         name: 'bulk-user-actions-form',
         initialValues: {
-            uuids: [],
+            userIds: [],
             fields: {
                 status: undefined,
                 trafficLimitBytes: undefined,
@@ -104,7 +104,7 @@ export const BulkManyUsersUpdateModal = NiceModal.create((props: IProps) => {
         updateUsers(
             {
                 variables: {
-                    uuids: actions.getUuids(),
+                    userIds: actions.getIds(),
                     fields: {
                         ...values.fields,
                         trafficLimitBytes: values.fields.trafficLimitBytes,

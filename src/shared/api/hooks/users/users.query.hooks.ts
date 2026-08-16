@@ -2,9 +2,9 @@ import { createQueryKeys } from '@lukemorales/query-key-factory'
 import {
     GetUsersTagsCommand,
     GetUsersCommand,
-    GetConnectionKeysByUuidCommand,
+    GetConnectionKeysByUserIdCommand,
     GetUserAccessibleNodesCommand,
-    GetUserByUuidCommand,
+    GetUserByIdCommand,
     GetUserMetadataCommand,
     GetUserSubscriptionRequestHistoryCommand,
     GetRawSubscriptionByShortUuidCommand
@@ -19,10 +19,10 @@ export const usersQueryKeys = createQueryKeys('users', {
     getAllUsers: (filters: GetUsersCommand.RequestQuery) => ({
         queryKey: [filters]
     }),
-    getUserByUuid: (route: GetUserByUuidCommand.RequestParam) => ({
+    getUserById: (route: GetUserByIdCommand.RequestParam) => ({
         queryKey: [route]
     }),
-    getConnectionKeysByUuid: (route: GetConnectionKeysByUuidCommand.RequestParam) => ({
+    getConnectionKeysByUserId: (route: GetConnectionKeysByUserIdCommand.RequestParam) => ({
         queryKey: [route]
     }),
     getRawSubscription: (route: GetRawSubscriptionByShortUuidCommand.RequestParam) => ({
@@ -44,16 +44,16 @@ export const usersQueryKeys = createQueryKeys('users', {
     })
 })
 
-export const useGetUserByUuid = createGetQueryHook({
-    endpoint: GetUserByUuidCommand.TSQ_url,
-    responseSchema: GetUserByUuidCommand.ResponseSchema,
-    routeParamsSchema: GetUserByUuidCommand.RequestParamSchema,
-    getQueryKey: ({ route }) => usersQueryKeys.getUserByUuid(route!).queryKey,
+export const useGetUserById = createGetQueryHook({
+    endpoint: GetUserByIdCommand.TSQ_url,
+    responseSchema: GetUserByIdCommand.ResponseSchema,
+    routeParamsSchema: GetUserByIdCommand.RequestParamSchema,
+    getQueryKey: ({ route }) => usersQueryKeys.getUserById(route!).queryKey,
     rQueryParams: {
         staleTime: sToMs(3),
         refetchInterval: sToMs(35)
     },
-    errorHandler: (error) => errorHandler(error, 'Get User By UUID')
+    errorHandler: (error) => errorHandler(error, 'Get User By User ID')
 })
 
 export const useGetUsers = createGetQueryHook({
@@ -103,15 +103,15 @@ export const useGetUserSubscriptionRequestHistory = createGetQueryHook({
     errorHandler: (error) => errorHandler(error, 'Get User Subscription Request History')
 })
 
-export const useGetConnectionKeysByUuid = createGetQueryHook({
-    endpoint: GetConnectionKeysByUuidCommand.TSQ_url,
-    responseSchema: GetConnectionKeysByUuidCommand.ResponseSchema,
-    routeParamsSchema: GetConnectionKeysByUuidCommand.RequestParamSchema,
-    getQueryKey: ({ route }) => usersQueryKeys.getConnectionKeysByUuid(route!).queryKey,
+export const useGetConnectionKeysByUserId = createGetQueryHook({
+    endpoint: GetConnectionKeysByUserIdCommand.TSQ_url,
+    responseSchema: GetConnectionKeysByUserIdCommand.ResponseSchema,
+    routeParamsSchema: GetConnectionKeysByUserIdCommand.RequestParamSchema,
+    getQueryKey: ({ route }) => usersQueryKeys.getConnectionKeysByUserId(route!).queryKey,
     rQueryParams: {
         staleTime: sToMs(4)
     },
-    errorHandler: (error) => errorHandler(error, 'Get Connection Keys By UUID')
+    errorHandler: (error) => errorHandler(error, 'Get Connection Keys By User ID')
 })
 
 export const useGetUserMetadata = createGetQueryHook({

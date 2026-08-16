@@ -32,6 +32,19 @@ export const useTbReportsTableColumns = (nodes?: GetNodesCommand.Response['respo
                 }
             },
             {
+                accessorKey: 'userId',
+                header: 'User ID',
+                accessorFn: (originalRow) => {
+                    if (originalRow.userId) {
+                        return originalRow.userId
+                    }
+                    return '–'
+                },
+                mantineTableBodyCellProps: {
+                    align: 'center'
+                }
+            },
+            {
                 accessorKey: 'node.uuid',
                 header: 'Reported Node',
                 Cell: ({ cell }) => (

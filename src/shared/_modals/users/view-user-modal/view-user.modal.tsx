@@ -11,11 +11,11 @@ import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { ViewUserModalContent } from './view-user.modal.content'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const ViewUserModal = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
     const { t } = useTranslation()
 
     const modal = useModal()
@@ -47,7 +47,7 @@ export const ViewUserModal = NiceModal.create((props: IProps) => {
                 />
             }
         >
-            <ViewUserModalContent userUuid={userUuid} />
+            <ViewUserModalContent userId={userId} />
         </Modal>
     )
 })

@@ -21,7 +21,7 @@ export const UsersTableSelectionFeature = (props: IProps) => {
         usersTableSelectionStoreActions.resetState()
     }
 
-    const usersToUpdate = usersTableSelectionStoreActions.getUuidLength()
+    const usersToUpdate = usersTableSelectionStoreActions.getIdsLength()
 
     if (usersToUpdate === 0) {
         return null

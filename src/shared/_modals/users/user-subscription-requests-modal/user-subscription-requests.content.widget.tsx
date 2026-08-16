@@ -4,6 +4,7 @@ import {
     Card,
     Group,
     Loader,
+    ScrollAreaAutosize,
     Stack,
     Text,
     ThemeIcon,
@@ -22,11 +23,11 @@ import { UserSubscriptionRequestsTable } from './user-subscription-requests.tabl
 
 interface IProps {
     mobile: boolean
-    userUuid: string
+    userId: number
 }
 
 export const UserSubscriptionRequestsModalContent = (props: IProps) => {
-    const { userUuid, mobile } = props
+    const { userId, mobile } = props
     const { t } = useTranslation()
 
     const {
@@ -36,66 +37,66 @@ export const UserSubscriptionRequestsModalContent = (props: IProps) => {
         refetch
     } = useGetUserSubscriptionRequestHistory({
         route: {
-            uuid: userUuid
+            userId: userId
         }
     })
 
     return (
         <Stack className={classes.drawerContent}>
-            <Card withBorder>
-                <Stack gap="md">
-                    <Group gap="sm" justify="space-between">
-                        <Group>
-                            <ThemeIcon color="indigo" radius="md" size="xl" variant="soft">
-                                <TbDevices size={24} />
-                            </ThemeIcon>
-                            <Stack gap={0}>
-                                <Box
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        height: 'calc(var(--mantine-font-size-xl) * var(--mantine-line-height))'
-                                    }}
-                                >
-                                    {isLoading ? (
-                                        <Loader color="cyan" size="sm" type="oval" />
-                                    ) : (
-                                        <Text c="white" fw={700} size="xl">
-                                            {records?.total ?? 0}
-                                        </Text>
-                                    )}
-                                </Box>
-                                <Text c="dimmed" size="xs">
-                                    {t('user-subscription-requests-drawer.widget.total-records')}
-                                </Text>
-                            </Stack>
-                        </Group>
-                        <Group gap="xs">
-                            <Tooltip label={t('common.refresh')}>
-                                <ActionIcon
-                                    color="indigo"
-                                    loading={isRefetching}
-                                    onClick={() => refetch()}
-                                    size="lg"
-                                    variant="soft"
-                                >
-                                    <TbRefresh size={20} />
-                                </ActionIcon>
-                            </Tooltip>
-                        </Group>
+            <Card style={{ flexShrink: 0 }} withBorder>
+                <Group gap="sm" justify="space-between">
+                    <Group>
+                        <ThemeIcon color="indigo" radius="md" size="xl" variant="soft">
+                            <TbDevices size={24} />
+                        </ThemeIcon>
+                        <Stack gap={0}>
+                            <Box
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    height: 'calc(var(--mantine-font-size-xl) * var(--mantine-line-height))'
+                                }}
+                            >
+                                {isLoading ? (
+                                    <Loader color="cyan" size="sm" type="oval" />
+                                ) : (
+                                    <Text c="white" fw={700} size="xl">
+                                        {records?.total ?? 0}
+                                    </Text>
+                                )}
+                            </Box>
+                            <Text c="dimmed" size="xs">
+                                {t('user-subscription-requests-drawer.widget.total-records')}
+                            </Text>
+                        </Stack>
                     </Group>
-                </Stack>
+                    <Group gap="xs">
+                        <Tooltip label={t('common.refresh')}>
+                            <ActionIcon
+                                color="indigo"
+                                loading={isRefetching}
+                                onClick={() => refetch()}
+                                size="lg"
+                                variant="soft"
+                            >
+                                <TbRefresh size={20} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
+                </Group>
             </Card>
 
             {mobile && !isLoading && records?.total === 0 && <EmptyPageLayout />}
 
             {mobile && isLoading && <LoaderModalShared h="80vh" text="Loading..." w="100%" />}
             {mobile && !isLoading && records && records.records.length > 0 && (
-                <Stack>
-                    {records.records.map((record) => (
-                        <UserSubscriptionRequestItem key={record.id} request={record} />
-                    ))}
-                </Stack>
+                <ScrollAreaAutosize style={{ flex: 1, minHeight: 0 }}>
+                    <Stack>
+                        {records.records.map((record) => (
+                            <UserSubscriptionRequestItem key={record.id} request={record} />
+                        ))}
+                    </Stack>
+                </ScrollAreaAutosize>
             )}
 
             {!mobile && (

@@ -6,13 +6,14 @@ import { HostsSpotlightWidget } from '@widgets/dashboard/hosts/hosts-spotlight'
 import { HostsTableWidget } from '@widgets/dashboard/hosts/hosts-table'
 import { motion } from 'motion/react'
 /* eslint-disable no-nested-ternary */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TbListCheck } from 'react-icons/tb'
 import { useSearchParams } from 'react-router'
 
 import { showModal } from '@shared/_modals/show-modal'
-import { useReorderHosts } from '@shared/api/hooks'
+import { queryClient } from '@shared/api'
+import { hostsQueryKeys, useReorderHosts } from '@shared/api/hooks'
 import { SEARCH_PARAMS } from '@shared/constants/search-params'
 import { LoadingScreen, Page, PageHeaderShared } from '@shared/ui'
 
@@ -29,9 +30,16 @@ export default function HostsPageComponent(props: IProps) {
     const { configProfiles, hosts, hostTags, isLoading } = props
     const [selectedHosts, setSelectedHosts] = useState<string[]>([])
     const [state, handlers] = useListState(hosts || [])
+    const isDraggingRef = useRef(false)
 
     const viewMode = useHostsViewMode()
-    const { mutate: reorderHosts } = useReorderHosts()
+    const { mutate: reorderHosts } = useReorderHosts({
+        mutationFns: {
+            onError: () => {
+                queryClient.invalidateQueries({ queryKey: hostsQueryKeys.getAllHosts.queryKey })
+            }
+        }
+    })
 
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -40,6 +48,10 @@ export default function HostsPageComponent(props: IProps) {
     useEffect(() => {
         ;(async () => {
             if (!hosts || !state) {
+                return
+            }
+
+            if (isDraggingRef.current) {
                 return
             }
 
@@ -56,6 +68,7 @@ export default function HostsPageComponent(props: IProps) {
 
             if (hasOrderChanged) {
                 reorderHosts({ variables: { hosts: updatedHosts } })
+                queryClient.setQueryData(hostsQueryKeys.getAllHosts.queryKey, state)
             }
         })()
     }, [state])
@@ -141,6 +154,7 @@ export default function HostsPageComponent(props: IProps) {
                         configProfiles={configProfiles}
                         handlers={handlers}
                         hosts={hosts}
+                        isDraggingRef={isDraggingRef}
                         selectedHosts={selectedHosts}
                         setSelectedHosts={setSelectedHosts}
                         state={state}

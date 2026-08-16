@@ -12,7 +12,7 @@ import {
 } from 'react-icons/pi'
 
 import { useNiceMantineModal } from '@shared/_modals/use-nice-modal'
-import { useGetUserByUuid } from '@shared/api/hooks'
+import { useGetUserById } from '@shared/api/hooks'
 import { CopyableDataListItem } from '@shared/ui/copyable-field/copyable-data-list-item'
 import { LoaderModalShared } from '@shared/ui/loader-modal'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
@@ -21,11 +21,11 @@ import { prettifyBytesUtil } from '@shared/utils/bytes'
 import { formatTimeUtil } from '@shared/utils/time-utils'
 
 interface IProps {
-    userUuid: string
+    userId: number
 }
 
 export const DetailedUserInfoDrawer = NiceModal.create((props: IProps) => {
-    const { userUuid } = props
+    const { userId } = props
 
     const modal = useModal()
     const { modalProps } = useNiceMantineModal({
@@ -35,9 +35,9 @@ export const DetailedUserInfoDrawer = NiceModal.create((props: IProps) => {
 
     const { t, i18n } = useTranslation()
 
-    const { data: user, isLoading: isUserLoading } = useGetUserByUuid({
+    const { data: user, isLoading: isUserLoading } = useGetUserById({
         route: {
-            uuid: userUuid
+            userId: userId
         }
     })
 
@@ -92,11 +92,6 @@ export const DetailedUserInfoDrawer = NiceModal.create((props: IProps) => {
                             <DataList withDivider orientation="vertical">
                                 <CopyableDataListItem label="ID" monospace value={user.id} />
 
-                                <CopyableDataListItem
-                                    label={t('detailed-user-info-drawer.widget.uuid')}
-                                    monospace
-                                    value={user.uuid}
-                                />
                                 <CopyableDataListItem
                                     label={t('detailed-user-info-drawer.widget.short-uuid')}
                                     monospace
