@@ -32,6 +32,8 @@ import {
     useGetSubpageConfigs,
     useGetSubscriptionTemplates
 } from '@shared/api/hooks'
+import { OPEN_ENTITY } from '@shared/constants'
+import { CopyEntityLinkButton } from '@shared/ui'
 import { LoaderModalShared } from '@shared/ui/loader-modal'
 import { formatInt } from '@shared/utils/misc'
 
@@ -342,7 +344,13 @@ export const ExternalSquadsDrawer = NiceModal.create((props: IProps) => {
             padding="md"
             position="right"
             size="600px"
-            title={t('external-squads.drawer.widget.edit-external-squad')}
+            title={
+                <Group gap="xs" wrap="nowrap">
+                    {t('external-squads.drawer.widget.edit-external-squad')}
+
+                    <CopyEntityLinkButton entity={OPEN_ENTITY.EXTERNAL_SQUAD} id={uuid} />
+                </Group>
+            }
         >
             <Transition
                 duration={300}
@@ -353,7 +361,7 @@ export const ExternalSquadsDrawer = NiceModal.create((props: IProps) => {
                 {(styles) => <Box style={styles}>{renderDrawerContent()}</Box>}
             </Transition>
 
-            {isLoading && <LoaderModalShared h="80vh" text="Loading..." w="100%" />}
+            {isLoading && <LoaderModalShared />}
         </Drawer>
     )
 })

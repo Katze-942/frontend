@@ -56,7 +56,7 @@ export const HomePage = (props: IProps) => {
                 })
                 if (!runtimeRef.current) throw new Error('runtimeRef')
                 return runtimeRef.current
-            })
+            }, 'remnawave-runtime.png')
         } catch (error) {
             notifications.show({
                 color: 'red',
@@ -148,7 +148,7 @@ export const HomePage = (props: IProps) => {
 
                 <div className={classes.section}>
                     <Title className={classes.title} m="xs" ml={0} order={4}>
-                        {t('home.page.system')}
+                        {t('common.field.system')}
                     </Title>
                     <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="xs">
                         {simpleMetrics.map((metric, index) => (

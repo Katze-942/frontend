@@ -2,6 +2,7 @@ import { NiceModalHandler } from '@ebay/nice-modal-react'
 import { useCallback, useEffect, useEffectEvent, useState } from 'react'
 
 import { useIsMobile } from '@shared/hooks/use-is-mobile'
+import { isPseudoFullscreenActive } from '@shared/hooks/use-pseudo-fullscreen'
 
 const stack: { id: string; hide: () => void }[] = []
 let listening = false
@@ -16,6 +17,7 @@ function hasManagedModalOpen(): boolean {
 
 function handleKeyDown(e: KeyboardEvent) {
     if (e.key !== 'Escape') return
+    if (isPseudoFullscreenActive()) return
     if (hasManagedModalOpen()) return
     const top = stack[stack.length - 1]
     if (!top) return
@@ -51,7 +53,7 @@ interface IProps {
 }
 
 export function useNiceMantineModal(props: IProps) {
-    const { modal, drawer, onClose } = props
+    const { modal, onClose } = props
     const isMobile = useIsMobile()
     const [entered, setEntered] = useState(false)
 
@@ -74,21 +76,13 @@ export function useNiceMantineModal(props: IProps) {
         return () => unregister(modal.id)
     }, [modal.visible, modal.id])
 
-    const drawerProps = !drawer
-        ? {
-              fullScreen: isMobile,
-              transition: isMobile ? { transition: 'fade', duration: 200 } : undefined,
-              centered: true
-          }
-        : {}
-
     const modalProps = {
+        fullScreen: isMobile,
         opened: entered && modal.visible,
         closeOnEscape: false,
         'data-nice-modal': modal.id,
         onClose: hide,
-        onExitTransitionEnd: () => modal.remove(),
-        ...drawerProps
+        onExitTransitionEnd: () => modal.remove()
     }
 
     return { modalProps, hide }

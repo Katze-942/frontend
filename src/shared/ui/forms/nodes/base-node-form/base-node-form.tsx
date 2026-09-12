@@ -5,12 +5,13 @@ import { ToggleNodeStatusButtonFeature } from '@features/ui/dashboard/nodes/togg
 import { Button, CopyButton, Group, Menu, px, Stack } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
 import {
+    GetNodeIntegrationsCommand,
     GetNodePluginsCommand,
     GetNodeSecretKeyCommand,
     GetNodeCommand,
     UpdateNodeCommand
 } from '@remnawave/backend-contract'
-import { ModalAccordionWidget } from '@widgets/dashboard/nodes/modal-accordeon-widget'
+import { NodeErrorMessageWidget } from '@widgets/dashboard/nodes/node-error-message'
 import { motion } from 'framer-motion'
 import { t } from 'i18next'
 import { ReactNode } from 'react'
@@ -54,6 +55,7 @@ interface IProps<T extends UpdateNodeCommand.RequestBody> {
     isDataSubmitting: boolean
     node: GetNodeCommand.Response['response']
     nodeDetailsCard?: ReactNode
+    nodeIntegrations: GetNodeIntegrationsCommand.Response['response']['nodeIntegrations']
     nodePlugins: GetNodePluginsCommand.Response['response']['nodePlugins']
     nodeSystemCard?: ReactNode
     secretKey: GetNodeSecretKeyCommand.Response['response'] | undefined
@@ -63,6 +65,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
     const {
         form,
         node,
+        nodeIntegrations,
         nodePlugins,
         secretKey,
         nodeDetailsCard,
@@ -83,7 +86,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                     initial="hidden"
                     variants={containerVariants}
                 >
-                    <ModalAccordionWidget node={node} />
+                    <NodeErrorMessageWidget node={node} />
 
                     {nodeDetailsCard && (
                         <MotionWrapper variants={cardVariants}>{nodeDetailsCard}</MotionWrapper>
@@ -97,6 +100,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                         cardVariants={cardVariants}
                         form={form}
                         motionWrapper={MotionWrapper}
+                        nodeIntegrations={nodeIntegrations}
                         nodePlugins={nodePlugins}
                         nodeUuid={node.uuid}
                         secretKey={secretKey}
@@ -136,7 +140,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                         style={{ flex: '1 1 400px' }}
                         variants={containerVariants}
                     >
-                        <ModalAccordionWidget node={node} />
+                        <NodeErrorMessageWidget node={node} />
 
                         {nodeDetailsCard && (
                             <MotionWrapper variants={cardVariants}>{nodeDetailsCard}</MotionWrapper>
@@ -146,6 +150,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                             cardVariants={cardVariants}
                             form={form}
                             motionWrapper={MotionWrapper}
+                            nodeIntegrations={nodeIntegrations}
                             nodePlugins={nodePlugins}
                             nodeUuid={node.uuid}
                             secretKey={secretKey}
@@ -200,7 +205,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                                 leftSection={<TbDots size={px('1.2rem')} />}
                                 size="md"
                             >
-                                {t('base-node-form.more-actions')}
+                                {t('common.action.more-actions')}
                             </Button>
                         </Menu.Target>
 
@@ -212,7 +217,7 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                             <CopyButton value={node.uuid}>
                                 {({ copy }) => (
                                     <Menu.Item leftSection={<TbCopy size="16px" />} onClick={copy}>
-                                        {t('common.copy-uuid')}
+                                        {t('common.action.copy-uuid')}
                                     </Menu.Item>
                                 )}
                             </CopyButton>
@@ -230,9 +235,9 @@ export const BaseNodeForm = <T extends UpdateNodeCommand.RequestBody>(props: IPr
                     loading={isDataSubmitting}
                     onClick={handleSubmit}
                     size="md"
-                    variant="light"
+                    variant="soft"
                 >
-                    {t('common.save')}
+                    {t('common.action.save')}
                 </Button>
             </ModalFooter>
         </>

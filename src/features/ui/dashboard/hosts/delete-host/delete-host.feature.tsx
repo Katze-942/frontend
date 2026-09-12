@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { TbTrash } from 'react-icons/tb'
 
 import { hideModal } from '@shared/_modals/show-modal'
-import { useDeleteHost } from '@shared/api/hooks'
+import { queryClient } from '@shared/api'
+import { QueryKeys, useDeleteHost } from '@shared/api/hooks'
 
 interface IProps {
     hostUuid: string
@@ -19,6 +20,7 @@ export function DeleteHostFeature(props: IProps) {
         mutationFns: {
             onSuccess: () => {
                 hideModal('hosts_editHostDrawer')
+                queryClient.refetchQueries({ queryKey: QueryKeys.hosts.getAllHosts.queryKey })
             }
         }
     })
@@ -29,11 +31,11 @@ export function DeleteHostFeature(props: IProps) {
 
     const openModal = () =>
         modals.openConfirmModal({
-            title: t('common.confirm-action'),
-            children: t('common.confirm-action-description'),
+            title: t('common.action.confirm-action'),
+            children: t('common.message.confirm-action-description'),
             labels: {
-                confirm: t('common.delete'),
-                cancel: t('common.cancel')
+                confirm: t('common.action.delete'),
+                cancel: t('common.action.cancel')
             },
             centered: true,
             cancelProps: {
@@ -44,7 +46,7 @@ export function DeleteHostFeature(props: IProps) {
         })
 
     return (
-        <Tooltip label={t('common.delete')}>
+        <Tooltip label={t('common.action.delete')}>
             <ActionIcon
                 color="red"
                 loading={isDeleteHostPending}

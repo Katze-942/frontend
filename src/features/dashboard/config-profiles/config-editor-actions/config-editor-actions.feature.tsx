@@ -8,7 +8,6 @@ import consola from 'consola/browser'
 import { useTranslation } from 'react-i18next'
 import { PiCheck, PiCheckSquareOffset, PiCopy, PiFloppyDisk } from 'react-icons/pi'
 import {
-    TbBraces,
     TbClipboardCopy,
     TbClipboardText,
     TbCut,
@@ -24,17 +23,8 @@ import { useIsMobile } from '@shared/hooks'
 import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 
-import {
-    MODALS,
-    useModalClose,
-    useModalsStoreOpenWithData,
-    useModalState
-} from '@entities/dashboard/modal-store'
-
 import classes from './config-editor-actions.module.css'
 import { Props } from './interfaces'
-
-const MODAL_KEY = MODALS.CONFIG_PROFILE_SHOW_SNIPPETS_DRAWER
 
 export function ConfigEditorActionsFeature(props: Props) {
     const {
@@ -55,10 +45,6 @@ export function ConfigEditorActionsFeature(props: Props) {
     const isMobile = useIsMobile()
     const clipboard = useClipboard({ timeout: 500 })
 
-    const { isOpen } = useModalState(MODAL_KEY)
-    const close = useModalClose(MODAL_KEY)
-    const openWithData = useModalsStoreOpenWithData()
-
     const [opened, handlers] = useDisclosure(false)
 
     const { mutate: updateConfig, isPending: isUpdating } = useUpdateConfigProfile({
@@ -76,7 +62,14 @@ export function ConfigEditorActionsFeature(props: Props) {
 
                 if (editorRef.current) {
                     skipDraftSaveForValue(newValue)
-                    editorRef.current.setValue(newValue)
+                    const instance = editorRef.current
+
+                    if (instance.getValue() !== newValue) {
+                        const viewState = instance.saveViewState()
+
+                        instance.setValue(newValue)
+                        instance.restoreViewState(viewState)
+                    }
                     setOriginalValue(newValue)
                 }
 
@@ -116,7 +109,7 @@ export function ConfigEditorActionsFeature(props: Props) {
             notifications.show({
                 color: 'red',
                 message: t('config-editor-actions.feature.failed-to-save-invalid-json'),
-                title: t('config-editor-actions.feature.error')
+                title: t('common.message.error')
             })
             return
         }
@@ -201,8 +194,9 @@ export function ConfigEditorActionsFeature(props: Props) {
                 leftSection={<PiFloppyDisk size={16} />}
                 loading={isUpdating}
                 onClick={handleSave}
+                variant="soft"
             >
-                {t('common.save')}
+                {t('common.action.save')}
             </Button>
 
             {!isConfigValid && !isUpdating && (
@@ -213,7 +207,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                     loading={isUpdating}
                     onClick={() => {
                         modals.openConfirmModal({
-                            title: t('common.confirm-action'),
+                            title: t('common.action.confirm-action'),
                             children: (
                                 <Text>
                                     {t('config-editor-actions.feature.save-anyway-description')}
@@ -221,8 +215,8 @@ export function ConfigEditorActionsFeature(props: Props) {
                             ),
                             centered: true,
                             labels: {
-                                confirm: t('common.save'),
-                                cancel: t('common.cancel')
+                                confirm: t('common.action.save'),
+                                cancel: t('common.action.cancel')
                             },
                             confirmProps: {
                                 color: 'red'
@@ -264,7 +258,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                                     }
                                     onClick={copy}
                                 >
-                                    {t('common.copy-uuid')}
+                                    {t('common.action.copy-uuid')}
                                 </Menu.Item>
                             )}
                         </CopyButton>
@@ -281,7 +275,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                             leftSection={<TbSelectAll size={14} />}
                             onClick={handleSelectAll}
                         >
-                            {t('config-editor-actions.feature.select-all')}
+                            {t('common.action.select-all')}
                         </Menu.Item>
 
                         <Menu.Item leftSection={<TbCut size={14} />} onClick={handleCut}>
@@ -321,7 +315,7 @@ export function ConfigEditorActionsFeature(props: Props) {
                             leftSection={<TbDownload size={14} />}
                             onClick={openDownloadModal}
                         >
-                            {t('config-editor-actions.feature.load-from-github')}
+                            {t('common.action.load-from-github')}
                         </Menu.Item>
                     </Menu.Dropdown>
                 </Menu>
@@ -334,21 +328,6 @@ export function ConfigEditorActionsFeature(props: Props) {
                 >
                     {t('config-editor-actions.feature.format')}
                 </Button>
-
-                <ActionIcon
-                    className={classes.actionIconRight}
-                    onClick={() => {
-                        if (isOpen) {
-                            close()
-                        } else {
-                            openWithData(MODAL_KEY, undefined)
-                        }
-                    }}
-                    size={36}
-                    variant={isOpen ? 'filled' : 'default'}
-                >
-                    <TbBraces size={20} />
-                </ActionIcon>
             </Group>
         </Group>
     )

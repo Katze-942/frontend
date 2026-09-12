@@ -128,10 +128,16 @@ export const SubscriptionHwidSettingsWidget = (props: IProps) => {
                             variant="light"
                             w="fit-content"
                         >
-                            {t('subscription-hwid-settings.widget.documentation')}
+                            {t('common.action.documentation')}
                         </Button>
-                        <Button color="teal" loading={isPending} size="md" type="submit">
-                            {t('common.save')}
+                        <Button
+                            color="teal"
+                            loading={isPending}
+                            size="md"
+                            type="submit"
+                            variant="soft"
+                        >
+                            {t('common.action.save')}
                         </Button>
                     </Group>
                 </SettingsCardShared.Bottom>

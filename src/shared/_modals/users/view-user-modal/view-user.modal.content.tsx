@@ -181,7 +181,7 @@ export const ViewUserModalContent = (props: IProps) => {
                 initial={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
             >
-                <LoaderModalShared h="78vh" />
+                <LoaderModalShared mih="70vh" />
             </motion.div>
         )
     }
@@ -291,7 +291,7 @@ export const ViewUserModalContent = (props: IProps) => {
                 <Menu keepMounted position="top-end" shadow="md">
                     <Menu.Target>
                         <Button color="gray" leftSection={<TbDots size={px('1.2rem')} />} size="md">
-                            {t('view-user-modal.widget.more-actions')}
+                            {t('common.action.more-actions')}
                         </Button>
                     </Menu.Target>
 
@@ -315,9 +315,9 @@ export const ViewUserModalContent = (props: IProps) => {
                         handleSubmit()
                     }}
                     size="md"
-                    variant="light"
+                    variant="soft"
                 >
-                    {t('common.save')}
+                    {t('common.action.save')}
                 </Button>
             </ModalFooter>
         </motion.div>

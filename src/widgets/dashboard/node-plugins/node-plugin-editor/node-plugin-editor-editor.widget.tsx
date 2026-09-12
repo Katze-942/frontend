@@ -2,17 +2,23 @@ import type { editor } from 'monaco-editor'
 
 import { MonacoSetupNodePluginEditorFeature } from '@features/dashboard/config-profiles/monaco-setup'
 import { NodePluginsEditorActionsFeature } from '@features/dashboard/node-plugins/node-plugins-editor-actions'
-import { Box, Card, Code, Paper } from '@mantine/core'
+import { Box, Paper } from '@mantine/core'
 import { modals } from '@mantine/modals'
-import Editor, { Monaco } from '@monaco-editor/react'
+import { Monaco } from '@monaco-editor/react'
 import { GetNodePluginCommand } from '@remnawave/backend-contract'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import clsx from 'clsx'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TbAlertTriangle } from 'react-icons/tb'
 import { useBlocker } from 'react-router'
 
+import { useGetSharedLists } from '@shared/api/hooks'
+import { usePseudoFullscreen, useViewportFillHeight } from '@shared/hooks'
+import { CodeEditor, editorClasses, EditorFooter, EditorStatusBar } from '@shared/ui/code-editor'
+import { fullscreenClasses, FullscreenToggleButton } from '@shared/ui/fullscreen-toggle-button'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { preventBackScroll } from '@shared/utils/misc'
+import { setupSuggestWidget } from '@shared/utils/setup-monaco/setup-suggest-monaco'
 
 import styles from './NodePluginEditor.module.css'
 
@@ -26,12 +32,19 @@ export function NodePluginEditorWidget(props: IProps) {
 
     const { nodePlugin, pluginUuid } = props
 
+    const { data: sharedLists } = useGetSharedLists()
+
     const [result, setResult] = useState('')
     const [isConfigValid, setIsConfigValid] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const [originalValue, setOriginalValue] = useState<string>(
         JSON.stringify(nodePlugin, null, 2) || ''
     )
+
+    const { isFullscreen, toggle: toggleFullscreen } = usePseudoFullscreen()
+    const { containerRef: editorWrapperRef, footerRef } = useViewportFillHeight({
+        enabled: !isFullscreen
+    })
 
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
     const monacoRef = useRef<Monaco | null>(null)
@@ -81,8 +94,14 @@ export function NodePluginEditorWidget(props: IProps) {
         }
     }, [blocker])
 
-    const handleEditorDidMount = (monaco: Monaco) => {
-        MonacoSetupNodePluginEditorFeature.setup(monaco)
+    const sharedListsData = useMemo(() => sharedLists?.sharedLists ?? [], [sharedLists])
+
+    useEffect(() => {
+        MonacoSetupNodePluginEditorFeature.setup(sharedListsData)
+    }, [sharedListsData])
+
+    const handleEditorDidMount = () => {
+        MonacoSetupNodePluginEditorFeature.setup(sharedListsData)
     }
 
     const checkForChanges = () => {
@@ -103,51 +122,44 @@ export function NodePluginEditorWidget(props: IProps) {
     }, [])
 
     return (
-        <Box className={styles.container}>
-            {result && (
-                <Paper
-                    className={styles.validationMessage}
-                    mb="md"
-                    p="md"
-                    radius="sm"
-                    style={{
-                        backgroundColor: isConfigValid
-                            ? 'rgba(51, 171, 132, 0.1)'
-                            : 'rgba(241, 65, 65, 0.1)',
-                        border: `1px solid ${isConfigValid ? 'rgb(51, 171, 132)' : 'rgb(241, 65, 65)'}`
-                    }}
-                >
-                    <Code
-                        color={isConfigValid ? 'teal' : 'red'}
-                        style={{
-                            backgroundColor: 'transparent',
-                            fontSize: '0.9rem',
-                            padding: 0
-                        }}
-                    >
-                        {result}
-                    </Code>
-                </Paper>
-            )}
-
+        <Box className={clsx(styles.container, isFullscreen && fullscreenClasses.overlay)}>
             <div style={{ position: 'absolute', opacity: 0, height: 0, overflow: 'hidden' }}>
                 <input aria-hidden="true" name="fake-login" tabIndex={-1} type="text" />
                 <input aria-hidden="true" name="fake-password" tabIndex={-1} type="password" />
             </div>
 
             <Paper
-                className={styles.editorWrapper}
+                className={clsx(
+                    styles.editorWrapper,
+                    !isFullscreen && editorClasses.editorAttached,
+                    isFullscreen && fullscreenClasses.fill
+                )}
                 p={0}
+                ref={editorWrapperRef}
+                pos="relative"
                 style={{
                     direction: 'ltr'
                 }}
                 withBorder
             >
-                <Editor
+                {isFullscreen && (
+                    <FullscreenToggleButton
+                        isFullscreen={isFullscreen}
+                        onToggle={toggleFullscreen}
+                    />
+                )}
+
+                <CodeEditor
+                    footer={
+                        result && (
+                            <EditorStatusBar status={isConfigValid ? 'success' : 'error'}>
+                                {result}
+                            </EditorStatusBar>
+                        )
+                    }
                     beforeMount={handleEditorDidMount}
                     className={styles.monacoEditor}
                     defaultLanguage="json"
-                    loading="Editor is loading..."
                     onChange={() => {
                         checkForChanges()
                     }}
@@ -155,83 +167,36 @@ export function NodePluginEditorWidget(props: IProps) {
                         editorRef.current = editor
                         monacoRef.current = monaco
 
-                        const contribution = editor.getContribution(
-                            'editor.contrib.suggestController'
-                            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                        ) as any
-
-                        if (contribution && contribution.widget) {
-                            const suggestWidget = contribution.widget.value
-                            if (suggestWidget?._setDetailsVisible) {
-                                suggestWidget._setDetailsVisible(true)
-                            }
-                            if (suggestWidget?._persistedSize) {
-                                suggestWidget._persistedSize.store({ width: 300, height: 300 })
-                            }
-                        }
-                    }}
-                    options={{
-                        autoClosingBrackets: 'always',
-                        autoClosingQuotes: 'always',
-                        autoIndent: 'full',
-                        automaticLayout: true,
-                        fixedOverflowWidgets: true,
-                        bracketPairColorization: {
-                            enabled: true,
-                            independentColorPoolPerBracketType: true
-                        },
-                        scrollbar: {
-                            useShadows: false,
-                            verticalHasArrows: true,
-                            horizontalHasArrows: true,
-                            vertical: 'visible',
-                            horizontal: 'visible',
-                            arrowSize: 30,
-                            alwaysConsumeMouseWheel: false
-                        },
-                        detectIndentation: true,
-                        folding: true,
-                        foldingStrategy: 'indentation',
-                        fontSize: 14,
-                        formatOnPaste: true,
-                        formatOnType: true,
-                        guides: {
-                            bracketPairs: true,
-                            indentation: true
-                        },
-                        insertSpaces: true,
-
-                        minimap: { enabled: true },
-                        quickSuggestions: true,
-                        renderLineHighlight: 'all',
-                        scrollBeyondLastLine: false,
-                        smoothScrolling: true,
-                        tabSize: 2,
-                        padding: {
-                            top: 10,
-                            bottom: 10
-                        }
+                        setupSuggestWidget(editor)
                     }}
                     path="node-plugin://*"
-                    theme="GithubDark"
                     value={JSON.stringify(nodePlugin, null, 2)}
                 />
             </Paper>
 
-            <Card className={styles.footer} h="auto" m="0" mt="md" pos="sticky">
-                <NodePluginsEditorActionsFeature
-                    editorRef={editorRef}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    isNodePluginValid={isConfigValid}
-                    monacoRef={monacoRef}
-                    originalValue={originalValue}
-                    pluginUuid={pluginUuid}
-                    setHasUnsavedChanges={setHasUnsavedChanges}
-                    setIsNodePluginValid={setIsConfigValid}
-                    setOriginalValue={setOriginalValue}
-                    setResult={setResult}
-                />
-            </Card>
+            {!isFullscreen && (
+                <EditorFooter ref={footerRef}>
+                    <FullscreenToggleButton
+                        floating={false}
+                        isFullscreen={isFullscreen}
+                        onToggle={toggleFullscreen}
+                        size={36}
+                    />
+
+                    <NodePluginsEditorActionsFeature
+                        editorRef={editorRef}
+                        hasUnsavedChanges={hasUnsavedChanges}
+                        isNodePluginValid={isConfigValid}
+                        monacoRef={monacoRef}
+                        originalValue={originalValue}
+                        pluginUuid={pluginUuid}
+                        setHasUnsavedChanges={setHasUnsavedChanges}
+                        setIsNodePluginValid={setIsConfigValid}
+                        setOriginalValue={setOriginalValue}
+                        setResult={setResult}
+                    />
+                </EditorFooter>
+            )}
         </Box>
     )
 }

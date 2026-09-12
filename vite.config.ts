@@ -28,7 +28,13 @@ export default defineConfig({
         // })
     ],
     optimizeDeps: {
-        include: ['html-parse-stringify']
+        include: [
+            'html-parse-stringify',
+            'monaco-editor/editor',
+            'monaco-editor/features/register.all',
+            'monaco-editor/languages/definitions/yaml/yaml',
+            'monaco-editor/languages/features/json/register'
+        ]
     },
     build: {
         target: 'esnext',
@@ -105,6 +111,10 @@ export default defineConfig({
                         {
                             name: 'tanstack',
                             test: /node_modules[\\/]@tanstack[\\/](react-query|react-table|react-virtual)[\\/]/
+                        },
+                        {
+                            name: 'xterm',
+                            test: /node_modules[\\/]@xterm[\\/]/
                         }
                     ]
                 }
@@ -126,5 +136,13 @@ export default defineConfig({
             overlay: false
         }
     },
-    resolve: { tsconfigPaths: true }
+    resolve: {
+        tsconfigPaths: true,
+        alias: [
+            {
+                find: /^monaco-editor\/esm\/vs\/(.*)$/,
+                replacement: 'monaco-editor/$1'
+            }
+        ]
+    }
 })

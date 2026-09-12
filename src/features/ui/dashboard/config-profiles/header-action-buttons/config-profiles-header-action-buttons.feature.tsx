@@ -7,19 +7,14 @@ import { showModal } from '@shared/_modals/show-modal'
 import { HelpActionIconShared } from '@shared/_modals/universal'
 import { queryClient } from '@shared/api'
 import { QueryKeys, useGetConfigProfiles } from '@shared/api/hooks'
-import { XrayLogo } from '@shared/ui/logos'
 import { UniversalSpotlightActionIconShared } from '@shared/ui/universal-spotlight'
-
-import { CONFIG_PROFILES_VIEW_MODE } from '@entities/dashboard/view-preferences-store'
 
 interface IProps {
     configProfileCount: number
-    setViewMode: (viewMode: CONFIG_PROFILES_VIEW_MODE) => void
-    viewMode: CONFIG_PROFILES_VIEW_MODE
 }
 
 export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
-    const { configProfileCount, setViewMode, viewMode } = props
+    const { configProfileCount } = props
     const { isFetching } = useGetConfigProfiles()
     const { t } = useTranslation()
 
@@ -38,28 +33,20 @@ export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
             {configProfileCount > 0 && <UniversalSpotlightActionIconShared />}
 
             <ActionIconGroup>
-                <ActionIcon
-                    color="gray"
-                    onClick={() =>
-                        setViewMode(
-                            viewMode === CONFIG_PROFILES_VIEW_MODE.PROFILES
-                                ? CONFIG_PROFILES_VIEW_MODE.SNIPPETS
-                                : CONFIG_PROFILES_VIEW_MODE.PROFILES
-                        )
-                    }
-                    size="input-md"
-                    variant="soft"
-                >
-                    {viewMode === CONFIG_PROFILES_VIEW_MODE.PROFILES ? (
+                <Tooltip label={t('snippets.drawer.widget.snippets')} withArrow>
+                    <ActionIcon
+                        color="teal"
+                        onClick={() => showModal('snippets_snippetsModal')}
+                        size="input-md"
+                        variant="soft"
+                    >
                         <TbCode size="24px" />
-                    ) : (
-                        <XrayLogo size="24px" />
-                    )}
-                </ActionIcon>
+                    </ActionIcon>
+                </Tooltip>
             </ActionIconGroup>
 
             <ActionIconGroup>
-                <Tooltip label={t('common.update')} withArrow>
+                <Tooltip label={t('common.action.update')} withArrow>
                     <ActionIcon
                         loading={isFetching}
                         onClick={handleUpdate}
@@ -73,7 +60,7 @@ export const ConfigProfilesHeaderActionButtonsFeature = (props: IProps) => {
 
             <ActionIconGroup>
                 <Tooltip
-                    label={t('config-profiles-header-action-buttons.feature.create-config-profile')}
+                    label={t('common.action.create')}
                     withArrow
                 >
                     <ActionIcon

@@ -358,9 +358,9 @@ export function ExternalSquadOverridesTab<T extends Record<string, unknown>>(pro
                 style={{
                     transition: 'all 0.2s ease'
                 }}
-                variant="light"
+                variant="soft"
             >
-                {t('common.save')}
+                {t('common.action.save')}
             </Button>
         </Card>
     )

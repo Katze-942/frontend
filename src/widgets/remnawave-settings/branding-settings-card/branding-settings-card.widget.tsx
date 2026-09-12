@@ -101,7 +101,7 @@ export const BrandingSettingsCardWidget = (props: IProps) => {
                                 onClick={() => modals.closeAll()}
                                 variant="light"
                             >
-                                {t('common.close')}
+                                {t('common.action.close')}
                             </Button>
                         </Stack>
                     )
@@ -216,7 +216,7 @@ export const BrandingSettingsCardWidget = (props: IProps) => {
                                     'branding-settings-card.widget.the-url-to-your-brand-logo-image'
                                 )}
                                 key={form.key('brandingSettings.logoUrl')}
-                                label={t('branding-settings-card.widget.logo-url')}
+                                label={t('common.field.logo-url')}
                                 leftSection={<TbLink size={16} />}
                                 placeholder="https://example.com/logo.png"
                                 {...form.getInputProps('brandingSettings.logoUrl')}
@@ -226,8 +226,14 @@ export const BrandingSettingsCardWidget = (props: IProps) => {
 
                     <SettingsCardShared.Bottom>
                         <Group justify="flex-end">
-                            <Button color="teal" loading={isUpdatePending} size="md" type="submit">
-                                {t('common.save')}
+                            <Button
+                                color="teal"
+                                loading={isUpdatePending}
+                                size="md"
+                                type="submit"
+                                variant="soft"
+                            >
+                                {t('common.action.save')}
                             </Button>
                         </Group>
                     </SettingsCardShared.Bottom>

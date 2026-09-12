@@ -11,11 +11,10 @@ import {
 } from '@kastov/mantine-react-table-open'
 import { ActionIcon, ActionIconGroup, Badge, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PiUsersDuotone } from 'react-icons/pi'
 import { TbBolt, TbEdit } from 'react-icons/tb'
-import { useSearchParams } from 'react-router'
 
 import { showModal } from '@shared/_modals/show-modal'
 import {
@@ -25,7 +24,6 @@ import {
     useGetUsers,
     useGetUserTags
 } from '@shared/api/hooks'
-import { SEARCH_PARAMS } from '@shared/constants/search-params'
 import { usePreventTableBackScroll } from '@shared/hooks'
 import { DEFAULT_PAGINATION_STATE, useMrtTableBinding } from '@shared/lib/mrt-table-store'
 import { DataTableShared } from '@shared/ui/table'
@@ -48,8 +46,6 @@ export function UserTableWidget() {
     const tableColumns = useUserTableColumns(internalSquads, externalSquads, nodes)
     const usersTableSelectionStoreActions = useUsersTableSelectionStoreActions()
     const tableSelection = useUsersTableSelectionStoreTableSelection()
-    const [searchParams, setSearchParams] = useSearchParams()
-
     const { state: persistedTableState, handlers: persistedTableHandlers } =
         useMrtTableBinding(useUsersTableStore)
 
@@ -96,23 +92,6 @@ export function UserTableWidget() {
                 usersTableSelectionStoreActions.getIdsLength() === 0 ? sToMs(25) : false
         }
     })
-
-    useEffect(() => {
-        if (isLoading) return
-        const userId = searchParams.get(SEARCH_PARAMS.USER)
-        if (!userId) return
-
-        showModal('users_viewUserModal', { userId: Number(userId) })
-
-        setSearchParams(
-            (prev) => {
-                const next = new URLSearchParams(prev)
-                next.delete(SEARCH_PARAMS.USER)
-                return next
-            },
-            { replace: true }
-        )
-    }, [isLoading, searchParams, setSearchParams])
 
     const table = useMantineReactTable({
         columns: tableColumns,
@@ -225,7 +204,7 @@ export function UserTableWidget() {
         renderToolbarInternalActions: ({ table: tableInstance }) => (
             <>
                 <ActionIconGroup>
-                    <Tooltip label={t('common.bulk-actions')} withArrow>
+                    <Tooltip label={t('common.action.bulk-actions')} withArrow>
                         <ActionIcon
                             color="green"
                             onClick={() => showModal('users_bulkAllUsersActionsModal')}
@@ -235,7 +214,7 @@ export function UserTableWidget() {
                             <TbBolt size={20} />
                         </ActionIcon>
                     </Tooltip>
-                    <Tooltip label={t('common.bulk-edit')} withArrow>
+                    <Tooltip label={t('common.action.bulk-edit')} withArrow>
                         <ActionIcon
                             color="red"
                             onClick={() => showModal('users_bulkAllUsersUpdateModal')}

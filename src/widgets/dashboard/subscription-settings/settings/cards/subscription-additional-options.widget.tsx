@@ -108,8 +108,14 @@ export const SubscriptionAdditionalOptionsWidget = (props: IProps) => {
 
                 <SettingsCardShared.Bottom>
                     <Group justify="flex-end">
-                        <Button color="teal" loading={isPending} size="md" type="submit">
-                            {t('common.save')}
+                        <Button
+                            color="teal"
+                            loading={isPending}
+                            size="md"
+                            type="submit"
+                            variant="soft"
+                        >
+                            {t('common.action.save')}
                         </Button>
                     </Group>
                 </SettingsCardShared.Bottom>

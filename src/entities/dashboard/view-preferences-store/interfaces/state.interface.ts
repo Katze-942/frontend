@@ -1,10 +1,22 @@
-import { CONFIG_PROFILES_VIEW_MODE, HOSTS_VIEW_MODE, LAYOUT_STYLE, NODES_VIEW_MODE } from './enums'
+import type { ILauncherPosition, TQuickLink } from '@shared/ui/quick-launcher/quick-links.types'
+
+import { HOSTS_VIEW_MODE, NODES_VIEW_MODE } from './enums'
+
+export interface IExperimentalFeatures {
+    legacyLayoutStyle: boolean
+    quickLauncher: boolean
+    nodeIntegrations: boolean
+    sshTerminal: boolean
+}
 
 export interface IState {
-    configProfilesViewMode: CONFIG_PROFILES_VIEW_MODE
+    experimental: IExperimentalFeatures
+    launcherPosition: ILauncherPosition | null
+    launcherColumns: null | number
+    quickLinks: TQuickLink[]
     hostsActiveTag: null | string
     hostsViewMode: HOSTS_VIEW_MODE
     nodesActiveTag: null | string
     nodesViewMode: NODES_VIEW_MODE
-    layoutStyle: LAYOUT_STYLE
+    sectionActiveTags: Record<string, null | string>
 }
